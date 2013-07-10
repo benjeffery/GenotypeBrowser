@@ -1,0 +1,22 @@
+﻿
+a, a:visited
+{
+    color:rgb(0,0,192);
+}
+
+
+.MapLegend
+{
+    line-height:1.8;
+    /*color:rgb(255,255,220);*/
+    padding-left:10px;
+    padding-right:10px;
+    padding-bottom:3px;
+    font-weight:bold;font-size:10pt;
+}
+
+.SmallTitle
+{
+    font-weight:bold;
+    line-height:200%;
+}
