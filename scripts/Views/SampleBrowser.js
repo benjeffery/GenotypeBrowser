@@ -62,6 +62,7 @@
                   snp.genotypes.forEach(function (genotype, i) {
                     var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
                     genotype.col = DQX.getRGB(col.r, col.g, col.b);
+                    genotype.pixel = [col.r, col.g, col.b];
                     var col_snp = snp.col;
                     col_snp.r += col.r;
                     col_snp.g += col.g;

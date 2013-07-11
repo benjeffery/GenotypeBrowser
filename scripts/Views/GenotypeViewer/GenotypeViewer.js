@@ -47,7 +47,8 @@
         }
         if (pos.y > that.gene_map_height && pos.x > that.row_header_width) {
           pos.x -= that.row_header_width;
-          that.rescaleSNPic(that.view.snp_scale.zoom(delta, pos.x));
+          that.view.snp_scale.zoom(delta, pos.x);
+          //that.rescaleSNPic();
         }
       };
       that.dragStart = function (ev) {
@@ -70,7 +71,8 @@
         if (that.drag == 'genome') {
           that.rescaleGenomic(that.view.genome_scale.dragMove(ev.touches));
         } else if (that.drag == 'snps') {
-          that.rescaleSNPic(that.view.snp_scale.dragMove(ev.touches));
+          that.view.snp_scale.dragMove(ev.touches);
+          //that.rescaleSNPic();
           // Y Scroll
           var dist = that.startDragScrollY - ev.center.y;
           that.view.scroll_pos = that.startDragScrollPos - dist;
@@ -117,7 +119,7 @@
         v.gene_map.bounding_box = {t: 0, r: that.width(), b: that.gene_map_height, l: that.row_header_width};
         that.canvas.attr('width', that.width())
           .attr('height', that.height());
-        that.view.genome_scale.range([ 50, v.gene_map.bounding_box.r - v.gene_map.bounding_box.l - 50]);
+        that.view.genome_scale.range([ 0, v.gene_map.bounding_box.r - v.gene_map.bounding_box.l - 20]);
         that.view.snp_scale.range([ 0, v.genotypes.bounding_box.r - v.genotypes.bounding_box.l - 40]);
         that.needUpdate = "resize";
         that.tick();
@@ -136,7 +138,12 @@
         };
         var locator = DQX.attr('pos');
         that.snp_cache = IntervalCache(provider, locator, that.newData);
+        sample_set.forEach(function (sample) {
+          sample.genotypes_canvas = document.createElement('canvas');
+          sample.genotypes_canvas.height = 1;
+        });
         that.sortSamples();
+
       };
 
       that.sortSamples = function () {
@@ -285,11 +292,7 @@
       };
 
       that.newData = function() {
-        var scale = that.view.genome_scale.domain();
-        that.data.snps = that.snp_cache.get(scale[0], scale[1]);
-        that.needUpdate = "newData";
-        that.view.snp_scale.domain([0, that.data.snps.length]);
-        //that.sortSamples();
+        that.updateSNPs(true);
       };
 
       //Initialise the viewer
@@ -313,14 +316,41 @@
 
       that.needUpdate = "Init";
 
-      that.updateSNPs = _.throttle(function() {
-        var scale = that.view.genome_scale.domain();
-        that.data.snps = that.snp_cache.get(scale[0], scale[1]);
-      }, 200);
+      that.updateSNPs = function(force_update) {
+        var genome_scale = that.view.genome_scale.domain();
+        if (force_update || that.data.snps.length == 0 || !_.isEqual(genome_scale, that.last_genome_scale_domain))
+        {
+          that.last_genome_scale_domain = genome_scale;
+          that.data.snps = that.snp_cache.get(genome_scale[0], genome_scale[1]);
+          //TODO fix anim and no jump on new data
+  //        if (that.snps.length > 0) {
+  //          current_range = {start: that.snps[0].pos, end: that.snps[that.snps.length-1].pos};
+  //        }
+          that.data.samples.forEach(function(sample, i) {
+            sample.genotypes_canvas.width = that.data.snps.length;
+            if (that.data.snps.length > 0) {
+              var ctx = sample.genotypes_canvas.getContext("2d");
+              var image_data = ctx.createImageData(that.data.snps.length, 1);
+              var data = image_data.data;
+              that.data.snps.forEach(function(snp,j) {
+                var pixel = snp.genotypes[i].pixel;
+                data[4*j] = pixel[0];
+                data[4*j+1] = pixel[1];
+                data[4*j+2] = pixel[2];
+                data[4*j+3] = 255;
+              });
+              ctx.putImageData(image_data,0,0);
+            }
+          });
+          that.view.snp_scale.tweenTo({left:0, right:that.data.snps.length});
+          that.needUpdate = 'new snps';
+        }
+      }
+      that.throttledUpdateSNPs = _.throttle(that.updateSNPs, 250);
 
       var led = false;
       that.tick = function (event) {
-        that.updateSNPs();
+        that.throttledUpdateSNPs();
         var ctx;
         var updated = false;
         var tweens = tween.getAll().length;
@@ -391,6 +421,7 @@
           }
         }),
         genome_scale: Scale(),
+        last_genome_scale_domain: [0, 0],
         snp_scale: Scale(),
         compress: false,
         row_height: that.row_height,

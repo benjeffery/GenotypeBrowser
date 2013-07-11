@@ -5,20 +5,29 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
 
       that._draw = function (ctx, view, data) {
         var x_scale = view.snp_scale;
-        //var snp_width = Math.ceil(x_scale(1)-x_scale(0));
         var snp_width = x_scale(1) - x_scale(0);
         var y_off = view.scroll_pos;
         var row_height = Math.ceil(view.row_height);
 
         //Genotype squares
-        data.samples.forEach(function (sample, i) {
-          data.snps.forEach(function (snp, j) {
-            ctx.fillStyle = snp.genotypes[i].col;
-            ctx.fillRect(x_scale(j), sample.vert + y_off, snp_width, row_height)
-            //var height = Math.min(row_height,row_height*((snp.ref+snp.alt)/100))
-            //ctx.fillRect(x_scale(snp.snp_index), sample.vert + y_off + (row_height-height)/2, snp_width, height);
-          });
-        });
+        if (data.snps.length > 0)
+          if (snp_width > 1)
+            data.samples.forEach(function (sample, i) {
+              data.snps.forEach(function (snp, j) {
+                ctx.fillStyle = snp.genotypes[i].col;
+                ctx.fillRect(x_scale(j)-(snp_width*0.001), sample.vert + y_off, snp_width+(snp_width*1.002), row_height);
+                //var height = Math.min(row_height,row_height*((snp.ref+snp.alt)/100))
+                //ctx.fillRect(x_scale(snp.snp_index), sample.vert + y_off + (row_height-height)/2, snp_width, height);
+              });
+            });
+          else {
+            var pixel_width = view.snp_scale(data.snps.length) - view.snp_scale(0);
+            var x_offset = view.snp_scale(0);
+            data.samples.forEach(function (sample, i) {
+              ctx.drawImage(sample.genotypes_canvas,x_offset,sample.vert + y_off,pixel_width,row_height);
+            });
+          }
+
 
         //Read count texts
         var alpha = tween.manual(snp_width, 58, 68, tween.Easing.Linear.None, 0, 0.8);
