@@ -97,9 +97,13 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                 canvas.height = that.height();
                 var ctx = canvas.getContext('2d');
                 var scale = view.genome_scale;
+                var divisions = Math.ceil(Math.pow(data.snps.length+1, 1/3));
+                var multiplier = 255/(divisions+1);
                 data.snps.forEach(function(snp, i) {
                     DQX.polyStar(ctx, scale(snp.pos), 47, 7, 3, 0, -90);
-                    var col = DQX.getRGB(i+10%255, Math.floor(((i+10)%(255*255))/255), Math.floor((i+10)/(255*255)));
+                    var col = DQX.getRGB(multiplier*((i+10)%divisions),
+                        multiplier * Math.floor(((i+10)%(divisions*divisions))/divisions),
+                        multiplier * Math.floor(((i+10))/(divisions*divisions)));
                     ctx.strokeStyle = col;
                     ctx.fillStyle = col;
                     ctx.fill();
@@ -107,10 +111,10 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                 });
                 var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var index = (pos.x + pos.y * imageData.width) * 4;
-                var snp_index = imageData.data[index+0]-10;
-                snp_index += imageData.data[index+1] * 255;
-                snp_index += imageData.data[index+2] * 255 * 255;
-                if (snp_index >= 0 && snp_index < data.snps.length)
+                var snp_index = (imageData.data[index+0]/multiplier) - 10;
+                snp_index += (imageData.data[index+1]/multiplier) * divisions;
+                snp_index += (imageData.data[index+2]/multiplier) * divisions * divisions;
+                if (snp_index >= 0 && snp_index < data.snps.length && snp_index == Math.round(snp_index))
                     that.clickSNPCallback(snp_index);
             };
             return that;
