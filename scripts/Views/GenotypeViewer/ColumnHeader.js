@@ -7,8 +7,6 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             that._draw = function(ctx, view, data) {
                 var scale = view.snp_scale;
                 var snp_width = scale(1)-scale(0);
-                var alpha = tween.manual(snp_width, 7, 10);
-
                 //Background
                 var g = ctx.createLinearGradient(0, 0, 0, that.height());
                 g.addColorStop(0, "rgba(255,255,255,0.85)");
@@ -17,31 +15,35 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                 ctx.fillStyle = g;
                 ctx.fillRect(0, 0, that.width(), that.height());
 
+                var alpha = tween.manual(snp_width, 5, 10);
                 //Little hat and area fill
-                ctx.strokeStyle = DQX.getRGB(0,0,0, 0.5);
-                data.snps.forEach(function(snp, i) {
-                    ctx.beginPath();
-                    ctx.moveTo(scale(i), 20);
-                    ctx.bezierCurveTo(scale(i), 10, scale(i+0.5), 10, scale(i+0.5), 0);
-                    ctx.bezierCurveTo(scale(i+0.5), 10, scale(i+1), 10, scale(i+1), 20);
-                    ctx.closePath();
-                    ctx.fillStyle = snp.col;
-                    ctx.lineWidth = snp.selected ? 2 : 1;
-                    ctx.fill();
-                    ctx.stroke();
-                    if (snp.selected) {
+                if (alpha > 0) {
+                    ctx.strokeStyle = DQX.getRGB(0,0,0, 0.5*alpha);
+                    data.snps.forEach(function(snp, i) {
                         ctx.beginPath();
                         ctx.moveTo(scale(i), 20);
-                        ctx.lineTo(scale(i+1), 20);
-                        ctx.lineTo(scale(i+1), that.height());
-                        ctx.lineTo(scale(i), that.height());
+                        ctx.bezierCurveTo(scale(i), 10, scale(i+0.5), 10, scale(i+0.5), 0);
+                        ctx.bezierCurveTo(scale(i+0.5), 10, scale(i+1), 10, scale(i+1), 20);
                         ctx.closePath();
                         ctx.fillStyle = snp.col;
+                        ctx.lineWidth = snp.selected ? 2 : 1;
                         ctx.fill();
-                    }
-                });
-                //Text
-                if (alpha > 0) {
+                        ctx.stroke();
+                        if (snp.selected) {
+                            ctx.beginPath();
+                            ctx.moveTo(scale(i), 20);
+                            ctx.lineTo(scale(i+1), 20);
+                            ctx.lineTo(scale(i+1), that.height());
+                            ctx.lineTo(scale(i), that.height());
+                            ctx.closePath();
+                            ctx.fillStyle = snp.col;
+                            ctx.fill();
+                        }
+                    });
+                }
+              //Text
+              alpha = tween.manual(snp_width, 7, 10);
+              if (alpha > 0) {
                     var offset = 0;
                     if (snp_width > 36)
                         offset = -6;
