@@ -406,7 +406,7 @@
       that.view = {
         column_header: ColumnHeader({}, that.clickSNP),
         gene_map: GeneMap({}, that.clickSNP),
-        genotypes: Genotypes({}),
+        genotypes: Genotypes({}, that.row_header_width),
         row_header: RowHeader({}),
         controls: Controls({}, {
           zoom_in: function () {
