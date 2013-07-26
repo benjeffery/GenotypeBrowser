@@ -68,7 +68,11 @@
                     col_snp.g += col.g;
                     col_snp.b += col.b;
                   });
-                  snp.col = DQX.getRGB(snp.col.r / len, snp.col.g / len, snp.col.b / len, 0.75)
+                  snp.col.r /= len;
+                  snp.col.g /= len;
+                  snp.col.b /= len;
+                  snp.rgb = snp.col;
+                  snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
                 });
                 callback(start, end, snps);
               //  DQX.stopProcessing();

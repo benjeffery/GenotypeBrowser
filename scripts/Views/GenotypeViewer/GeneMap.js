@@ -39,14 +39,19 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                    ctx.fill();
                 });
                 //Curves from gene scale to SNP scale
-                data.snps.forEach(function(snp, i) {
-                    ctx.strokeStyle = snp.col;
-                    ctx.lineWidth = snp.selected ? 2 : 1;
-                    ctx.beginPath();
-                    ctx.moveTo(scale(snp.pos), 50);
-                    ctx.bezierCurveTo(scale(snp.pos), 75, snp_scale(i+0.5), 75, snp_scale(i+0.5), 100);
-                    ctx.stroke();
-                });
+                //Work out how much space per snp
+                var snp_width = (scale.range()[1] - scale.range()[0])/data.snps.length;
+                var alpha = tween.manual(snp_width, 2, 5);
+                if (alpha > 0) {
+                  data.snps.forEach(function(snp, i) {
+                      ctx.strokeStyle = DQX.getRGB(snp.rgb.r,snp.rgb.g,snp.rgb.b, alpha);
+                      ctx.lineWidth = snp.selected ? 2 : 1;
+                      ctx.beginPath();
+                      ctx.moveTo(scale(snp.pos), 50);
+                      ctx.bezierCurveTo(scale(snp.pos), 75, snp_scale(i+0.5), 75, snp_scale(i+0.5), 100);
+                      ctx.stroke();
+                  });
+                }
                 //SNP Triangles and line on genome
                 ctx.strokeStyle = "rgba(0,0,0,0.50)";
                 ctx.fillStyle = "rgba(0,152,0,0.50)";

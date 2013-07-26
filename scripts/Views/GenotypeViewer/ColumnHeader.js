@@ -25,7 +25,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                         ctx.bezierCurveTo(scale(i), 10, scale(i+0.5), 10, scale(i+0.5), 0);
                         ctx.bezierCurveTo(scale(i+0.5), 10, scale(i+1), 10, scale(i+1), 20);
                         ctx.closePath();
-                        ctx.fillStyle = snp.col;
+                        ctx.fillStyle = DQX.getRGB(snp.rgb.r,snp.rgb.g,snp.rgb.b, alpha);
                         ctx.lineWidth = snp.selected ? 2 : 1;
                         ctx.fill();
                         ctx.stroke();
