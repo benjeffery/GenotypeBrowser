@@ -326,19 +326,27 @@
   //        if (that.snps.length > 0) {
   //          current_range = {start: that.snps[0].pos, end: that.snps[that.snps.length-1].pos};
   //        }
+          var snps = that.data.snps;
+          var snps_per_pixel = Math.floor(snps.length/that.width());
+          if (snps.length % that.width() > 0)
+            snps_per_pixel += 1;
           that.data.samples.forEach(function(sample, i) {
-            sample.genotypes_canvas.width = that.data.snps.length;
+            //We want a canvas that is the next multiple of the number of snps
+            sample.genotypes_canvas.width = Math.ceil(snps.length/snps_per_pixel);
             if (that.data.snps.length > 0) {
               var ctx = sample.genotypes_canvas.getContext("2d");
               var image_data = ctx.createImageData(that.data.snps.length, 1);
               var data = image_data.data;
-              that.data.snps.forEach(function(snp,j) {
-                var pixel = snp.genotypes[i].pixel;
-                data[4*j] = pixel[0];
-                data[4*j+1] = pixel[1];
-                data[4*j+2] = pixel[2];
-                data[4*j+3] = 255;
-              });
+              //For now just use a single snp... summarise later
+              var p = 0;
+              for(var j=0; j<snps.length; j+= snps_per_pixel) {
+                var pixel = snps[j].genotypes[i].pixel;
+                data[4*p] = pixel[0];
+                data[4*p+1] = pixel[1];
+                data[4*p+2] = pixel[2];
+                data[4*p+3] = 255;
+                p++;
+              }
               ctx.putImageData(image_data,0,0);
             }
           });
