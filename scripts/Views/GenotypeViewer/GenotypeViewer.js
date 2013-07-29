@@ -150,9 +150,7 @@
         var sample_set = that.data.samples;
         that.data.samples.forEach(function (sample, i) {
           sample.selected_haplotype = '';
-          sample.haplotype = '';
           that.data.snps.forEach(function (snp) {
-            sample.haplotype += snp.genotypes[i].gt;
             if (snp.selected)
               sample.selected_haplotype += snp.genotypes[i].gt;
           });
@@ -192,7 +190,7 @@
               }
             },
           ]
-          that.sample_leaf_sort = DQX.comp_attr('haplotype', d3.descending);
+          that.sample_leaf_sort = DQX.comp_attr('selected_haplotype', d3.descending);
         } else {
           that.sample_heirachy = [
             {
@@ -330,20 +328,47 @@
           var snps_per_pixel = Math.floor(snps.length/that.width());
           if (snps.length % that.width() > 0)
             snps_per_pixel += 1;
+          var snps_length = snps.length;
           that.data.samples.forEach(function(sample, i) {
             //We want a canvas that is the next multiple of the number of snps
-            sample.genotypes_canvas.width = Math.ceil(snps.length/snps_per_pixel);
+            sample.genotypes_canvas.width = Math.ceil(snps_length/snps_per_pixel);
             if (that.data.snps.length > 0) {
               var ctx = sample.genotypes_canvas.getContext("2d");
               var image_data = ctx.createImageData(that.data.snps.length, 1);
               var data = image_data.data;
-              //For now just use a single snp... summarise later
               var p = 0;
-              for(var j=0; j<snps.length; j+= snps_per_pixel) {
-                var pixel = snps[j].genotypes[i].pixel;
-                data[4*p] = pixel[0];
-                data[4*p+1] = pixel[1];
-                data[4*p+2] = pixel[2];
+              //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
+              for(var j=0; j<snps_length; j+= snps_per_pixel) {
+                var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
+                var num_snps_in_pixel = 0;
+                var found_alts = false;
+                for (var k=j; k < j+snps_per_pixel && k < snps_length; k++) {
+                  var genotype = snps[k].genotypes[i];
+                  var pixel = genotype.pixel;
+                  if (genotype.gt == 1)
+                    if (found_alts) {
+                      result_pixel_r += pixel[0];
+                      result_pixel_g += pixel[1];
+                      result_pixel_b += pixel[2];
+                      num_snps_in_pixel += 1;
+                    } else {
+                      found_alts = true;
+                      result_pixel_r = pixel[0];
+                      result_pixel_g = pixel[1];
+                      result_pixel_b = pixel[2];
+                      num_snps_in_pixel = 1
+                    }
+                  else
+                    if (!found_alts) {
+                      result_pixel_r += pixel[0];
+                      result_pixel_g += pixel[1];
+                      result_pixel_b += pixel[2];
+                      num_snps_in_pixel += 1;
+                    }
+                }
+                data[4*p] = result_pixel_r/num_snps_in_pixel;
+                data[4*p+1] = result_pixel_g/num_snps_in_pixel;
+                data[4*p+2] = result_pixel_b/num_snps_in_pixel;
                 data[4*p+3] = 255;
                 p++;
               }
@@ -353,7 +378,7 @@
           that.view.snp_scale.tweenTo({left:0, right:that.data.snps.length});
           that.needUpdate = 'new snps';
         }
-      }
+      };
       that.throttledUpdateSNPs = _.throttle(that.updateSNPs, 250);
 
       var led = false;
