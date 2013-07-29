@@ -337,13 +337,34 @@
               var ctx = sample.genotypes_canvas.getContext("2d");
               var image_data = ctx.createImageData(that.data.snps.length, 1);
               var data = image_data.data;
-              //For now just use a single snp... summarise later
               var p = 0;
+              //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
               for(var j=0; j<snps.length; j+= snps_per_pixel) {
-                var pixel = snps[j].genotypes[i].pixel;
-                data[4*p] = pixel[0];
-                data[4*p+1] = pixel[1];
-                data[4*p+2] = pixel[2];
+                var pixels = [];
+                var found_alts = false;
+                for (var k=j; k < j+snps_per_pixel; k++) {
+                  var genotype = snps[k].genotypes[i];
+                  if (genotype.gt == 1)
+                    if (found_alts)
+                      pixels.push(genotype.pixel);
+                    else {
+                      found_alts = true;
+                      pixels = [genotype.pixel];
+                    }
+                  else
+                    if (!found_alts)
+                      pixels.push(genotype.pixel);
+                }
+                var len = pixels.length;
+                var pixel = [0,0,0];
+                pixels.forEach(function(pix) {
+                  pixel[0] += pix[0];
+                  pixel[1] += pix[1];
+                  pixel[2] += pix[2];
+                });
+                data[4*p] = pixel[0]/len;
+                data[4*p+1] = pixel[1]/len;
+                data[4*p+2] = pixel[2]/len;
                 data[4*p+3] = 255;
                 p++;
               }
@@ -353,7 +374,7 @@
           that.view.snp_scale.tweenTo({left:0, right:that.data.snps.length});
           that.needUpdate = 'new snps';
         }
-      }
+      };
       that.throttledUpdateSNPs = _.throttle(that.updateSNPs, 250);
 
       var led = false;
