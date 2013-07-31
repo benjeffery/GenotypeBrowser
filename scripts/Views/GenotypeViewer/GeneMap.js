@@ -51,22 +51,22 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                       ctx.bezierCurveTo(scale(snp.pos), 75, snp_scale(i+0.5), 75, snp_scale(i+0.5), 100);
                       ctx.stroke();
                   });
+                  //SNP Triangles and line on genome
+                  ctx.strokeStyle = "rgba(0,0,0,0.50)";
+                  ctx.fillStyle = "rgba(0,152,0,0.50)";
+                  data.snps.forEach(function(snp) {
+                      ctx.beginPath();
+                      ctx.moveTo(scale(snp.pos), 25);
+                      ctx.lineTo(scale(snp.pos), 40);
+                      ctx.lineWidth = snp.selected ? 2 : 1;
+                      ctx.stroke();
+                      DQX.polyStar(ctx, scale(snp.pos), 47, 7, 3, 0, -90);
+                      ctx.fill();
+                      ctx.stroke();
+                  });
                 }
-                //SNP Triangles and line on genome
-                ctx.strokeStyle = "rgba(0,0,0,0.50)";
-                ctx.fillStyle = "rgba(0,152,0,0.50)";
-                data.snps.forEach(function(snp) {
-                    ctx.beginPath();
-                    ctx.moveTo(scale(snp.pos), 25);
-                    ctx.lineTo(scale(snp.pos), 40);
-                    ctx.lineWidth = snp.selected ? 2 : 1;
-                    ctx.stroke();
-                    DQX.polyStar(ctx, scale(snp.pos), 47, 7, 3, 0, -90);
-                    ctx.fill();
-                    ctx.stroke();
-                });
 
-                ctx.save()
+                ctx.save();
                 ctx.strokeStyle = "rgba(0,0,0,0.75)";
                 if ( ctx.setLineDash !== undefined )   ctx.setLineDash([10,5]);
                 if ( ctx.mozDash !== undefined )       ctx.mozDash = [10,5];
