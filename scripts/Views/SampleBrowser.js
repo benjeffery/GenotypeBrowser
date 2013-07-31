@@ -1,5 +1,5 @@
 ﻿define(["require", "DQX/Application", "DQX/Framework", "DQX/Msg", "DQX/Utils", "DQX/DocEl", "DQX/Controls",
-  "DQX/SQL", "DQX/SVG", "DQX/FramePanel", "DQX/FrameTree", "DQX/FrameList", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherSnp",
+  "DQX/SQL", "DQX/SVG", "DQX/FramePanel", "DQX/FrameTree", "DQX/FrameList", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherSnpAsync",
   "Wizards/WizardSelectSamples", "Views/GenotypeViewer/GenotypeViewer", "Common", "MetaData"],
   function (require, Application, Framework, Msg, DQX, DocEl, Controls, SQL, SVG, FramePanel, FrameTree, FrameList, DataFetcher, DataFetcherSnp, WizardSelectSamples, GenotypeViewer, Common, MetaData) {
     var SampleBrowserModule = {
@@ -9,6 +9,7 @@
           'browser',
           'Genotype Browser'
         );
+        that.fetcher = new DataFetcherSnp.Fetcher(serverUrl, MetaData.genotypeDataSource);
 
         that.createFrames = function (rootFrame) {
           rootFrame.makeGroupHor();
@@ -35,49 +36,47 @@
           if (samples.length > 0 && snps.length > 0) {
             //DQX.setProcessing('Fetching...');
             var sample_ids = samples.map(DQX.attr('ID'));
-            var fetcher = new DataFetcherSnp.Fetcher(serverUrl);
-            fetcher.setDataSource(MetaData.genotypeDataSource, function () {
-              fetcher.setAutoExtendRange(false);
-              fetcher.setFetchSequenceIDList(sample_ids);
-              fetcher.setChromoID('MAL13');
-              fetcher._fetchRange(start, end, function () {
-                var data = fetcher.getSnpInfoRange(start, end, DataFetcherSnp.SnpFilterData());
-                snps.forEach(function (snp, i) {
-                  snp.genotypes = [];
-                });
-                sample_ids.forEach(function (sample_id) {
-                  var sample_data = data.seqdata[sample_id];
+            that.fetcher.fetch('MAL13', start, end, sample_ids, function (data) {
+                if (data) {
                   snps.forEach(function (snp, i) {
-                    snp.genotypes.push({
-                      alt: sample_data.cov2[i],
-                      ref: sample_data.cov1[i],
-                      gt: sample_data.cov2[i] >= sample_data.cov1[i] ? (sample_data.cov2[i] >= 5 ? 1 : 0) : 0
+                    snp.genotypes = [];
+                  });
+                  sample_ids.forEach(function (sample_id) {
+                    var sample_data = data.sample_data[sample_id];
+                    snps.forEach(function (snp, i) {
+                      snp.genotypes.push({
+                        alt: sample_data.CovA[i],
+                        ref: sample_data.CovD[i],
+                        gt: sample_data.CovA[i] >= sample_data.CovD[i] ? (sample_data.CovA[i] >= 5 ? 1 : 0) : 0
+                      });
                     });
                   });
-                });
-                //Set colours for the snps
-                var len = samples.length;
-                snps.forEach(function (snp, i) {
-                  snp.col = {r: 0, g: 0, b: 0};
-                  snp.genotypes.forEach(function (genotype, i) {
-                    var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
-                    genotype.col = DQX.getRGB(col.r, col.g, col.b);
-                    genotype.pixel = [col.r, col.g, col.b];
-                    var col_snp = snp.col;
-                    col_snp.r += col.r;
-                    col_snp.g += col.g;
-                    col_snp.b += col.b;
+                  //Set colours for the snps
+                  var len = samples.length;
+                  snps.forEach(function (snp, i) {
+                    snp.col = {r: 0, g: 0, b: 0};
+                    snp.genotypes.forEach(function (genotype, i) {
+                      var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
+                      genotype.col = DQX.getRGB(col.r, col.g, col.b);
+                      genotype.pixel = [col.r, col.g, col.b];
+                      var col_snp = snp.col;
+                      col_snp.r += col.r;
+                      col_snp.g += col.g;
+                      col_snp.b += col.b;
+                    });
+                    snp.col.r /= len;
+                    snp.col.g /= len;
+                    snp.col.b /= len;
+                    snp.rgb = snp.col;
+                    snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
                   });
-                  snp.col.r /= len;
-                  snp.col.g /= len;
-                  snp.col.b /= len;
-                  snp.rgb = snp.col;
-                  snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
-                });
-                callback(start, end, snps);
+                  callback(start, end, snps);
+                } else {
+                  //We had a error getting the genotypes, returning null will mean this gets retried next time.
+                  callback(start, end, null);
+                }
               //  DQX.stopProcessing();
               });
-            });
           }
         };
         that.snpProvider = function (start, end, samples, callback) {
