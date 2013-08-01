@@ -81,9 +81,8 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           });
         }
 
-        //If we are n't doing lines then do grouped linking
+        //If we aren't doing lines then do grouped linking
         alpha = tween.manual(snp_width, 5, 2);
-        //TODO Move region def to SNP Update
         if (alpha > 0) {
           var regions = [];
           //Decide if we want to group or just use fixed width hilight
