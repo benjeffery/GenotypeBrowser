@@ -76,6 +76,8 @@
                 }
               //  DQX.stopProcessing();
               });
+          } else {
+            callback(start, end, []);
           }
         };
         that.snpProvider = function (start, end, samples, callback) {

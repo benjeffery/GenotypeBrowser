@@ -41,6 +41,18 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           DQX.roundedRect(ctx, scale(annot.start), 25, scale(annot.width) - scale(0), 15, 6);
           ctx.fill();
         });
+        //Loading indicator
+        ctx.save();
+        ctx.strokeStyle = '#F00';
+        if ( ctx.setLineDash !== undefined )   ctx.setLineDash([10,5]);
+        if ( ctx.mozDash !== undefined )       ctx.mozDash = [10,5];
+        ctx.beginPath();
+        data.snp_cache.intervals_being_fetched.forEach(function(interval) {
+          ctx.moveTo(scale(interval.start), 30);
+          ctx.lineTo(scale(interval.end), 30);
+        });
+        ctx.stroke();
+        ctx.restore();
         //Curves from gene scale to SNP scale
         var alpha = tween.manual(snp_width, 2, 5);
         if (alpha > 0) {
@@ -67,6 +79,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           });
         }
 
+        //If we are n't doing lines then do grouped linking
         alpha = tween.manual(snp_width, 5, 2);
         //TODO Move region def to SNP Update
         if (alpha > 0) {
@@ -118,8 +131,6 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             ctx.closePath();
             ctx.fill();
           }
-
-
           ctx.restore();
         }
 
@@ -133,6 +144,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           ctx.fillText(annot.name, scale(annot.start), 25, scale(annot.width) - scale(0));
         });
       };
+
       that._click = function (pos, view, data) {
         var canvas = document.createElement('canvas');
         canvas.width = that.width();

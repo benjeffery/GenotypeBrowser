@@ -137,7 +137,7 @@
           that.snp_provider(start, end, sample_set, callback)
         };
         var locator = DQX.attr('pos');
-        that.snp_cache = IntervalCache(provider, locator, that.newData);
+        that.data.snp_cache = IntervalCache(provider, locator, that.newData);
         sample_set.forEach(function (sample) {
           sample.genotypes_canvas = document.createElement('canvas');
           sample.genotypes_canvas.height = 1;
@@ -279,7 +279,7 @@
               that.data.annotations = annotations;
             }
             , DQX.createMessageFailFunction);
-          that.data.snps = that.snp_cache.get(gene_info.start, gene_info.stop);
+          that.data.snps = that.data.snp_cache.get(gene_info.start, gene_info.stop);
         } else {
           that.data.gene_info = null;
           that.data.annotations = [];
@@ -319,7 +319,7 @@
         if (force_update || that.data.snps.length == 0 || !_.isEqual(genome_scale, that.last_genome_scale_domain))
         {
           that.last_genome_scale_domain = genome_scale;
-          that.data.snps = that.snp_cache.get(genome_scale[0], genome_scale[1]);
+          that.data.snps = that.data.snp_cache.get(genome_scale[0], genome_scale[1]);
           //TODO fix anim and no jump on new data
   //        if (that.snps.length > 0) {
   //          current_range = {start: that.snps[0].pos, end: that.snps[that.snps.length-1].pos};

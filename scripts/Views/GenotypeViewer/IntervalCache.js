@@ -8,6 +8,7 @@ define(["d3"],
       that.locator = locator;
       that.updated = updated;
       that.intervals = [];
+      that.intervals_being_fetched = [];
 
       that.merge = function (array, other) {
         return Array.prototype.push.apply(array, other);
@@ -80,6 +81,7 @@ define(["d3"],
         }).left;
         for (i = 0, ref = missing_intervals.length; i < ref; i++) {
           interval = missing_intervals[i];
+          that.intervals_being_fetched.push(interval);
           that.intervals.splice(bisect(that.intervals, interval.start), 0, interval);
           interval.elements = [];
           that.provider(interval.start, interval.end, that._insert_received_data);
@@ -91,6 +93,9 @@ define(["d3"],
         var match;
         match = that.intervals.filter(function (i) {
           return i.start === start && i.end === end;
+        });
+        that.intervals_being_fetched = that.intervals_being_fetched.filter(function (i) {
+          return i.start != match[0].start;
         });
         if (match.length !== 1) {
           console.log("Got data for non-existant interval or multiples", start, end);
