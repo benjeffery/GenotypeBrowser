@@ -12,6 +12,9 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
       that._draw = function (ctx, view, data) {
         var scale = view.genome_scale;
         var snp_scale = view.snp_scale;
+        var snps = data.snps;
+        var snps_length = snps.length;
+        var snp_width = (scale.range()[1] - scale.range()[0]) / snps_length;
 
         ctx.fillStyle = "rgba(255,255,255,0.85)";
         ctx.fillRect(0, 0, that.width(), that.height());
@@ -39,11 +42,9 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           ctx.fill();
         });
         //Curves from gene scale to SNP scale
-        //Work out how much space per snp
-        var snp_width = (scale.range()[1] - scale.range()[0]) / data.snps.length;
         var alpha = tween.manual(snp_width, 2, 5);
         if (alpha > 0) {
-          data.snps.forEach(function (snp, i) {
+          snps.forEach(function (snp, i) {
             ctx.strokeStyle = DQX.getRGB(snp.rgb.r, snp.rgb.g, snp.rgb.b, alpha);
             ctx.lineWidth = snp.selected ? 2 : 1;
             ctx.beginPath();
@@ -54,7 +55,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           //SNP Triangles and line on genome
           ctx.strokeStyle = "rgba(0,0,0,0.50)";
           ctx.fillStyle = "rgba(0,152,0,0.50)";
-          data.snps.forEach(function (snp) {
+          snps.forEach(function (snp) {
             ctx.beginPath();
             ctx.moveTo(scale(snp.pos), 25);
             ctx.lineTo(scale(snp.pos), 40);
@@ -66,25 +67,61 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           });
         }
 
-        ctx.save();
-        ctx.strokeStyle = "rgba(0,0,0,0.75)";
-        if (ctx.setLineDash !== undefined)   ctx.setLineDash([10, 5]);
-        if (ctx.mozDash !== undefined)       ctx.mozDash = [10, 5];
-        var view_width = scale.domain()[1] - scale.domain()[0];
-        ctx.lineWidth = 2;
-        data.snps.forEach(function (snp, i) {
-          if (i > 0) {
-            if (snp.pos - data.snps[i - 1].pos > 0.2 * view_width) {
-              var pos = (snp.pos + data.snps[i - 1].pos) / 2;
-              ctx.beginPath();
-              ctx.moveTo(scale(pos), 25);
-              ctx.lineTo(scale(pos), 40);
-              ctx.bezierCurveTo(scale(pos), 75, snp_scale(i), 75, snp_scale(i), 100);
-              ctx.stroke();
+        alpha = tween.manual(snp_width, 5, 2);
+        //TODO Move region def to SNP Update
+        if (alpha > 0) {
+          var regions = [];
+          //Decide if we want to group or just use fixed width hilight
+          if (snps_length > 200000000) {
+            //Use fixed width
+            var jump = Math.ceil(snps_length/10);
+            for (i = 1; i < snps_length; i += jump) {
+              regions.push([i, i+jump]);
+            }
+          } else {
+            //Find some groupings based on large jumps
+            var gaps = [];
+            for(i = 1; i < snps_length; i+=1) {
+              gaps.push([i-1, snps[i].pos - snps[i-1].pos])
+            }
+            gaps.sort(function(a,b) {return b[1]-a[1]});
+            gaps = gaps.slice(0, Math.min(Math.ceil(gaps.length/20),20));
+            gaps.sort(function(a,b) {return a[0]-b[0]});
+            if (gaps.length > 0) {
+              regions.push([0, gaps[0][0]]);
+              for (i = 0; i < gaps.length-1; i += 1) {
+                regions.push([gaps[i][0]+1, gaps[i+1][0]]);
+              }
+              regions.push([gaps[gaps.length-1][0]+1, snps_length-1]);
             }
           }
-        });
-        ctx.restore();
+          ctx.save();
+          ctx.strokeStyle = DQX.getRGB(0,0,0,alpha);
+          var view_width = scale.domain()[1] - scale.domain()[0];
+          ctx.lineWidth = 2;
+          for (var i = 0; i < regions.length; i += 1) {
+            var i1 = regions[i][0];
+            var i2 = regions[i][1];
+            var pos = snps[i1].pos;
+            var pos2 = snps[i2].pos;
+//            ctx.beginPath();
+//            ctx.moveTo(scale(pos), 25);
+//            ctx.lineTo(scale(pos), 40);
+//            ctx.bezierCurveTo(scale(pos), 75, snp_scale(i1), 75, snp_scale(i1), 100);
+//            ctx.stroke();
+            ctx.fillStyle = i % 2 ? DQX.getRGB(0,0,255,alpha/2) : DQX.getRGB(0,128,255,alpha/2);
+            ctx.beginPath();
+            ctx.moveTo(scale(pos), 40);
+            ctx.bezierCurveTo(scale(pos), 75, snp_scale(i1), 75, snp_scale(i1), 100);
+            ctx.lineTo(snp_scale(i2), 100);
+            ctx.bezierCurveTo(snp_scale(i2), 75, scale(pos2), 75,  scale(pos2), 40);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+
+          ctx.restore();
+        }
 
         ctx.font = "bold 12px sans-serif";
         ctx.lineWidth = 2;
@@ -102,9 +139,9 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         canvas.height = that.height();
         var ctx = canvas.getContext('2d');
         var scale = view.genome_scale;
-        var divisions = Math.ceil(Math.pow(data.snps.length + 1, 1 / 3));
+        var divisions = Math.ceil(Math.pow(snps.length + 1, 1 / 3));
         var multiplier = 255 / (divisions + 1);
-        data.snps.forEach(function (snp, i) {
+        snps.forEach(function (snp, i) {
           DQX.polyStar(ctx, scale(snp.pos), 47, 7, 3, 0, -90);
           var col = DQX.getRGB(multiplier * ((i + 10) % divisions),
             multiplier * Math.floor(((i + 10) % (divisions * divisions)) / divisions),
@@ -119,7 +156,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         var snp_index = (imageData.data[index + 0] / multiplier) - 10;
         snp_index += (imageData.data[index + 1] / multiplier) * divisions;
         snp_index += (imageData.data[index + 2] / multiplier) * divisions * divisions;
-        if (snp_index >= 0 && snp_index < data.snps.length && snp_index == Math.round(snp_index))
+        if (snp_index >= 0 && snp_index < snps.length && snp_index == Math.round(snp_index))
           that.clickSNPCallback(snp_index);
       };
       return that;
