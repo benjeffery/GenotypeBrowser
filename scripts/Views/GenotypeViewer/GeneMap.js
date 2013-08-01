@@ -44,12 +44,14 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         //Loading indicator
         ctx.save();
         ctx.strokeStyle = '#F00';
-        if ( ctx.setLineDash !== undefined )   ctx.setLineDash([10,5]);
-        if ( ctx.mozDash !== undefined )       ctx.mozDash = [10,5];
         ctx.beginPath();
         data.snp_cache.intervals_being_fetched.forEach(function(interval) {
+          ctx.moveTo(scale(interval.start), 25);
+          ctx.lineTo(scale(interval.start), 35);
           ctx.moveTo(scale(interval.start), 30);
           ctx.lineTo(scale(interval.end), 30);
+          ctx.moveTo(scale(interval.end), 25);
+          ctx.lineTo(scale(interval.end), 35);
         });
         ctx.stroke();
         ctx.restore();
@@ -85,12 +87,13 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         if (alpha > 0) {
           var regions = [];
           //Decide if we want to group or just use fixed width hilight
-          if (snps_length > 200000000) {
+          if (snps_length > 5000) {
             //Use fixed width
             var jump = Math.ceil(snps_length/10);
-            for (i = 1; i < snps_length; i += jump) {
+            for (i = 0; i+jump < snps_length; i += jump) {
               regions.push([i, i+jump]);
             }
+            regions.push([i, snps_length-1]);
           } else {
             //Find some groupings based on large jumps
             var gaps = [];
@@ -110,7 +113,6 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           }
           ctx.save();
           ctx.strokeStyle = DQX.getRGB(0,0,0,alpha);
-          var view_width = scale.domain()[1] - scale.domain()[0];
           ctx.lineWidth = 2;
           for (var i = 0; i < regions.length; i += 1) {
             var i1 = regions[i][0];

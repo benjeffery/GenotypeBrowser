@@ -9,6 +9,8 @@ define(["d3"],
       that.updated = updated;
       that.intervals = [];
       that.intervals_being_fetched = [];
+      that.provider_queue = [];
+      that.current_provider_requests = 0;
 
       that.merge = function (array, other) {
         return Array.prototype.push.apply(array, other);
@@ -20,6 +22,7 @@ define(["d3"],
         if (retrieve_missing == null) retrieve_missing = true;
         if (start < 0) start = 0;
         if (end < 0) end = 0;
+        if (start == end) return [];
         matching_intervals = that.intervals.filter(function (interval) {
           return interval.start <= end && start <= interval.end;
         });
@@ -79,17 +82,54 @@ define(["d3"],
         bisect = d3.bisector(function (interval) {
           return interval.start;
         }).left;
+        //Request small regions at a time to give a sense of progress...
+        var resized_missing_intervals = [];
+        var threshold = 50000;
+        for (i = 0, ref = missing_intervals.length; i < ref; i++) {
+          interval = missing_intervals[i];
+          if (interval.end - interval.start < threshold)
+            resized_missing_intervals.push(interval);
+          else {
+            var i_start = interval.start;
+            while (i_start + threshold < interval.end) {
+              resized_missing_intervals.push({start: i_start, end: i_start+threshold});
+              i_start += threshold;
+            }
+            resized_missing_intervals.push({start: i_start, end: interval.end});
+          }
+        }
+        missing_intervals = resized_missing_intervals;
+
         for (i = 0, ref = missing_intervals.length; i < ref; i++) {
           interval = missing_intervals[i];
           that.intervals_being_fetched.push(interval);
           that.intervals.splice(bisect(that.intervals, interval.start), 0, interval);
           interval.elements = [];
-          that.provider(interval.start, interval.end, that._insert_received_data);
+          that._add_to_provider_queue(interval);
         }
         return matched_elements;
       };
 
+      that._add_to_provider_queue = function(interval) {
+        that.provider_queue.push(interval);
+        if (that.provider_queue.length == 1) {
+          that._process_provider_queue()
+        }
+      };
+
+      that._process_provider_queue = function() {
+        if (that.current_provider_requests < 2 && that.provider_queue.length > 0) {
+          var interval = that.provider_queue.pop();
+          that.provider(interval.start, interval.end, that._insert_received_data);
+          that.current_provider_requests += 1;
+        }
+        if (that.provider_queue.length > 0) {
+          setTimeout(that._process_provider_queue, 100);
+        }
+      };
+
       that._insert_received_data = function (start, end, data) {
+        that.current_provider_requests -= 1;
         var match;
         match = that.intervals.filter(function (i) {
           return i.start === start && i.end === end;
