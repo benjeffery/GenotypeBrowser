@@ -66,25 +66,25 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                   });
                 }
 
-                ctx.save();
-                ctx.strokeStyle = "rgba(0,0,0,0.75)";
-                if ( ctx.setLineDash !== undefined )   ctx.setLineDash([10,5]);
-                if ( ctx.mozDash !== undefined )       ctx.mozDash = [10,5];
-                var view_width = scale.domain()[1] - scale.domain()[0];
-                ctx.lineWidth = 2;
-                data.snps.forEach(function(snp, i) {
-                    if (i > 0) {
-                        if (snp.pos - data.snps[i-1].pos > 0.2*view_width) {
-                            var pos = (snp.pos + data.snps[i-1].pos) / 2;
-                            ctx.beginPath();
-                            ctx.moveTo(scale(pos), 25);
-                            ctx.lineTo(scale(pos), 40);
-                            ctx.bezierCurveTo(scale(pos), 75, snp_scale(i), 75, snp_scale(i), 100);
-                            ctx.stroke();
-                        }
-                    }
-                });
-                ctx.restore();
+//                ctx.save();
+//                ctx.strokeStyle = "rgba(0,0,0,0.75)";
+//                if ( ctx.setLineDash !== undefined )   ctx.setLineDash([10,5]);
+//                if ( ctx.mozDash !== undefined )       ctx.mozDash = [10,5];
+//                var view_width = scale.domain()[1] - scale.domain()[0];
+//                ctx.lineWidth = 2;
+//                data.snps.forEach(function(snp, i) {
+//                    if (i > 0) {
+//                        if (snp.pos - data.snps[i-1].pos > 0.2*view_width) {
+//                            var pos = (snp.pos + data.snps[i-1].pos) / 2;
+//                            ctx.beginPath();
+//                            ctx.moveTo(scale(pos), 25);
+//                            ctx.lineTo(scale(pos), 40);
+//                            ctx.bezierCurveTo(scale(pos), 75, snp_scale(i), 75, snp_scale(i), 100);
+//                            ctx.stroke();
+//                        }
+//                    }
+//                });
+//                ctx.restore();
 
                 ctx.font = "bold 12px sans-serif";
                 ctx.lineWidth = 2;

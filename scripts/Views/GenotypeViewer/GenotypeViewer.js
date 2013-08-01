@@ -1,12 +1,12 @@
 ﻿define(["lodash", "clusterfck", "easel", "d3", "tween", "require", "DQX/Utils", "DQX/Model",
   "DQX/SVG", "DQX/SQL", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherAnnotation",
-  "DQX/DataFetcher/DataFetcherSnp", "DQX/FramePanel", "MetaData", "Views/GenotypeViewer/ColumnHeader",
+  "DQX/FramePanel", "MetaData", "Views/GenotypeViewer/ColumnHeader",
   "Views/GenotypeViewer/RowHeader", "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
-  "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale", 
+  "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
   "Views/GenotypeViewer/IntervalCache"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
-            SVG, SQL, DataFetcher, DataFetcherAnnotation, 
-            DataFetcherSnp, FramePanel, MetaData, ColumnHeader, 
+            SVG, SQL, DataFetcher, DataFetcherAnnotation,
+            FramePanel, MetaData, ColumnHeader,
             RowHeader, GeneMap, Genotypes, TouchEvents, Controls, Scale, IntervalCache) {
     return function GenotypeViewer(frame, snp_provider) {
       var that = {};
@@ -329,6 +329,7 @@
           if (snps.length % that.width() > 0)
             snps_per_pixel += 1;
           var snps_length = snps.length;
+          console.time('Draw');
           that.data.samples.forEach(function(sample, i) {
             //We want a canvas that is the next multiple of the number of snps
             sample.genotypes_canvas.width = Math.ceil(snps_length/snps_per_pixel);
@@ -339,6 +340,13 @@
               var p = 0;
               //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
               for(var j=0; j<snps_length; j+= snps_per_pixel) {
+//                var genotype = snps[j].genotypes[i];
+//                var pixel = genotype.pixel;
+//                data[4*p] = pixel[0];
+//                data[4*p+1] = pixel[1];
+//                data[4*p+2] = pixel[2];
+//                data[4*p+3] = 255;
+//                p++;
                 var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
                 var num_snps_in_pixel = 0;
                 var found_alts = false;
@@ -375,6 +383,7 @@
               ctx.putImageData(image_data,0,0);
             }
           });
+          console.timeEnd('Draw');
           that.view.snp_scale.tweenTo({left:0, right:that.data.snps.length});
           that.needUpdate = 'new snps';
         }

@@ -10,8 +10,8 @@
         //Data source tables
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        //theMetaData1.database = 'pf21c';
-        MetaData.database = 'pfpopgen';
+        MetaData.database = 'pf21';
+        //MetaData.database = 'pfpopgen';
         MetaData.tableSNPInfo = 'pfsnprel21'; //SNP information (including population frequencies)
         MetaData.tableAnnotation = 'pfannotrel21'; //Genome annotation
         MetaData.genotypeDataSource = 'SNP-PfPopGen2.1/public';

@@ -16,11 +16,10 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           if (snp_width > 1) {
             var first_snp = Math.floor(Math.max(0, x_scale.invert(-left_overdraw)-1));
             var last_snp = Math.ceil(Math.min(data.snps.length, x_scale.invert(width)+1));
-            console.log(first_snp, last_snp);
             data.samples.forEach(function (sample, i) {
               for(var j = first_snp; j < last_snp; j++) {
                 var snp = data.snps[j];
-                ctx.fillStyle = snp.genotypes[i].col;
+                ctx.fillStyle = DQX.getRGB(snp.genotypes[i].pixel);
                 ctx.fillRect(x_scale(j)-(snp_width*0.001), sample.vert + y_off, snp_width+(snp_width*1.002), row_height);
                 //var height = Math.min(row_height,row_height*((snp.ref+snp.alt)/100))
                 //ctx.fillRect(x_scale(snp.snp_index), sample.vert + y_off + (row_height-height)/2, snp_width, height);

@@ -97,21 +97,21 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                     ctx.stroke();
                 }
                 //Dashed lines in big gaps
-                ctx.strokeStyle = "rgba(0,0,0,0.75)";
-                if ( ctx.setLineDash !== undefined )   ctx.setLineDash([10,5]);
-                if ( ctx.mozDash !== undefined )       ctx.mozDash = [10,5];
-                var view_width = view.genome_scale.domain()[1] - view.genome_scale.domain()[0];
-                ctx.lineWidth = 2;
-                data.snps.forEach(function(snp, i) {
-                    if (i > 0) {
-                        if (snp.pos - data.snps[i-1].pos > 0.2*view_width) {
-                            ctx.beginPath();
-                            ctx.moveTo(scale(i), that.height() + (view.genotypes.bounding_box.b - view.genotypes.bounding_box.t));
-                            ctx.lineTo(scale(i), 0);
-                            ctx.stroke();
-                        }
-                    }
-                });
+//                ctx.strokeStyle = "rgba(0,0,0,0.75)";
+//                if ( ctx.setLineDash !== undefined )   ctx.setLineDash([10,5]);
+//                if ( ctx.mozDash !== undefined )       ctx.mozDash = [10,5];
+//                var view_width = view.genome_scale.domain()[1] - view.genome_scale.domain()[0];
+//                ctx.lineWidth = 2;
+//                data.snps.forEach(function(snp, i) {
+//                    if (i > 0) {
+//                        if (snp.pos - data.snps[i-1].pos > 0.2*view_width) {
+//                            ctx.beginPath();
+//                            ctx.moveTo(scale(i), that.height() + (view.genotypes.bounding_box.b - view.genotypes.bounding_box.t));
+//                            ctx.lineTo(scale(i), 0);
+//                            ctx.stroke();
+//                        }
+//                    }
+//                });
             };
 
             that._click = function(pos, view, data) {
