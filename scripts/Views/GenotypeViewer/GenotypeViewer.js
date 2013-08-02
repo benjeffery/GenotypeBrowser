@@ -1,16 +1,17 @@
 ﻿define(["lodash", "clusterfck", "easel", "d3", "tween", "require", "DQX/Utils", "DQX/Model",
-  "DQX/SVG", "DQX/SQL", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherAnnotation",
+  "DQX/SVG",
   "DQX/FramePanel", "MetaData", "Views/GenotypeViewer/ColumnHeader",
   "Views/GenotypeViewer/RowHeader", "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
   "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
   "Views/GenotypeViewer/IntervalCache"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
-            SVG, SQL, DataFetcher, DataFetcherAnnotation,
+            SVG,
             FramePanel, MetaData, ColumnHeader,
             RowHeader, GeneMap, Genotypes, TouchEvents, Controls, Scale, IntervalCache) {
-    return function GenotypeViewer(frame, snp_provider) {
+    return function GenotypeViewer(frame, snp_provider, annotation_provider) {
       var that = {};
-      that.snp_provider = snp_provider;
+      that.snpProvider = snp_provider;
+      that.annotationProvider = annotation_provider;
 
       that.rescaleGenomic = function (target) {
         var in_range = that.data.snps.map(function (snp) {
@@ -134,7 +135,7 @@
       that.setSamples = function (sample_set) {
         that.data.samples = sample_set;
         var provider = function(chrom, start, end, callback) {
-          that.snp_provider(that.view.chrom, start, end, sample_set, callback)
+          that.snpProvider(that.view.chrom, start, end, sample_set, callback)
         };
         var locator = DQX.attr('pos');
         that.data.snp_cache = IntervalCache(provider, locator, that.newData);
@@ -143,7 +144,6 @@
           sample.genotypes_canvas.height = 1;
         });
         that.sortSamples();
-
       };
 
       that.sortSamples = function () {
@@ -273,16 +273,10 @@
           that.data.gene_info = gene_info;
           var gene_width = gene_info.stop - gene_info.start;
           that.view.genome_scale.domain([gene_info.start, gene_info.stop]);
-          that.annotation_fetcher.setChromoID(gene_info.chromid);
           that.view.chrom = gene_info.chromid;
-          that.annotation_fetcher._fetchRange(gene_info.start, gene_info.stop,
-            function (annotations) {
-              that.data.annotations = annotations;
-            }
-            , DQX.createMessageFailFunction);
+
         } else {
           that.data.gene_info = null;
-          that.data.annotations = [];
           that.view.genome_scale.domain([0, 0]);
         }
         that.view.scroll_pos = 0;
@@ -296,14 +290,6 @@
       var framePanel = FramePanel(frame);
       framePanel.onResize = that.resize;
 
-      //Set us up the fetcher
-      that.annotation_fetcher = new DataFetcherAnnotation.Fetcher({
-        serverURL: serverUrl,
-        database: MetaData.database,
-        annotTableName: MetaData.tableAnnotation,
-        chromnrfield: 'chrom'
-      });
-
       //Where to show it
       that.parent_element = $('#' + frame.getClientDivID());
       that.parent_element
@@ -315,6 +301,7 @@
 
       that.updateSNPs = function(force_update) {
         var genome_scale = that.view.genome_scale.domain();
+        that.data.annotations = that.data.annotation_cache.get(that.view.chrom, Math.floor(genome_scale[0]), Math.ceil(genome_scale[1]));
         if (force_update || that.data.snps.length == 0 || !_.isEqual(genome_scale, that.last_genome_scale_domain))
         {
           that.last_genome_scale_domain = genome_scale;
@@ -443,6 +430,9 @@
         annotations: [],
         snps: []
       };
+      var locator = DQX.attr('start');
+      that.data.annotation_cache = IntervalCache(that.annotationProvider, locator, that.tick);
+
       //View parameters
       that.view = {
         column_header: ColumnHeader({}, that.clickSNP),

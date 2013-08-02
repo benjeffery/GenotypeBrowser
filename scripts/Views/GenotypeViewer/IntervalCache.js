@@ -14,7 +14,7 @@ define(["d3"],
       that.merge = function (array, other) {
         return Array.prototype.push.apply(array, other);
       };
-
+      //TODO Chuuck requests to a multiple of 10 boundary or something to prevent small intervals
       that.get = function (chrom, start, end, retrieve_missing) {
         var bisect, i, interval, last_match, matched_elements, matching_intervals, missing_intervals, ref;
         that.intervals[chrom] = that.intervals[chrom] || [];

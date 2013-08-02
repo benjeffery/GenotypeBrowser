@@ -1,7 +1,7 @@
 ﻿define(["require", "DQX/Application", "DQX/Framework", "DQX/Msg", "DQX/Utils", "DQX/DocEl", "DQX/Controls",
-  "DQX/SQL", "DQX/SVG", "DQX/FramePanel", "DQX/FrameTree", "DQX/FrameList", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherSnpAsync",
+  "DQX/SQL", "DQX/SVG", "DQX/FramePanel", "DQX/FrameTree", "DQX/FrameList", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherSnpAsync", "DQX/DataFetcher/DataFetcherAnnotation",
   "Wizards/WizardSelectSamples", "Views/GenotypeViewer/GenotypeViewer", "Common", "MetaData"],
-  function (require, Application, Framework, Msg, DQX, DocEl, Controls, SQL, SVG, FramePanel, FrameTree, FrameList, DataFetcher, DataFetcherSnp, WizardSelectSamples, GenotypeViewer, Common, MetaData) {
+  function (require, Application, Framework, Msg, DQX, DocEl, Controls, SQL, SVG, FramePanel, FrameTree, FrameList, DataFetcher, DataFetcherSnp, DataFetcherAnnotation, WizardSelectSamples, GenotypeViewer, Common, MetaData) {
     var SampleBrowserModule = {
 
       init: function () {
@@ -10,6 +10,12 @@
           'Genotype Browser'
         );
         that.fetcher = new DataFetcherSnp.Fetcher(serverUrl, MetaData.genotypeDataSource);
+        that.annotation_fetcher = new DataFetcherAnnotation.Fetcher({
+          serverURL: serverUrl,
+          database: MetaData.database,
+          annotTableName: MetaData.tableAnnotation,
+          chromnrfield: 'chrom'
+        });
 
         that.createFrames = function (rootFrame) {
           rootFrame.makeGroupHor();
@@ -31,6 +37,17 @@
 
         };
 
+        that.annotationProvider = function (chrom, start, end, callback) {
+          that.annotation_fetcher.setChromoID(chrom);
+          that.annotation_fetcher._fetchRange(start, end,
+            function (annotations) {
+              callback(chrom, start, end, annotations);
+            },
+            function () {
+              callback(chrom, start, end, null);
+            }
+          );
+        };
 
         that.getGenotypes = function (chrom, start, end, snps, samples, callback) {
           if (samples.length > 0 && snps.length > 0) {
@@ -152,7 +169,7 @@
 
           this.controlPanel.render();
 
-          var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, that.snpProvider);
+          var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, that.snpProvider, that.annotationProvider);
           compress.setOnChanged(function () {
             gv.modify_compress(compress.getValue())
           });
