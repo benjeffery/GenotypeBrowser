@@ -10,8 +10,8 @@
         //Data source tables
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        MetaData.database = 'pf21';
-        //MetaData.database = 'pfpopgen';
+        //MetaData.database = 'pf21';
+        MetaData.database = 'pfpopgen';
         MetaData.tableSNPInfo = 'pfsnprel21'; //SNP information (including population frequencies)
         MetaData.tableAnnotation = 'pfannotrel21'; //Genome annotation
         MetaData.genotypeDataSource = 'SNP-PfPopGen2.1/public';
@@ -36,23 +36,23 @@
 
         //////// Information about the chromosomes
         MetaData.chromosomes = [
-            { id: 'MAL1', len: 0.7 },
-            { id: 'MAL2', len: 1 },
-            { id: 'MAL3', len: 1.2 },
-            { id: 'MAL4', len: 2 },
-            { id: 'MAL5', len: 2 },
-            { id: 'MAL6', len: 2 },
-            { id: 'MAL7', len: 2 },
-            { id: 'MAL8', len: 2 },
-            { id: 'MAL9', len: 2 },
-            { id: 'MAL10', len: 2 },
-            { id: 'MAL11', len: 4 },
-            { id: 'MAL12', len: 4 },
-            { id: 'MAL13', len: 4 },
-            { id: 'MAL14', len: 4 }
+            { idx: 1, id: 'MAL1', len: 0.7 },
+            { idx: 2, id: 'MAL2', len: 1 },
+            { idx: 3, id: 'MAL3', len: 1.2 },
+            { idx: 4, id: 'MAL4', len: 2 },
+            { idx: 5, id: 'MAL5', len: 2 },
+            { idx: 6, id: 'MAL6', len: 2 },
+            { idx: 7, id: 'MAL7', len: 2 },
+            { idx: 8, id: 'MAL8', len: 2 },
+            { idx: 9, id: 'MAL9', len: 2 },
+            { idx: 10, id: 'MAL10', len: 2 },
+            { idx: 11, id: 'MAL11', len: 4 },
+            { idx: 12, id: 'MAL12', len: 4 },
+            { idx: 13, id: 'MAL13', len: 4 },
+            { idx: 14, id: 'MAL14', len: 4 }
         ];
         $.each(MetaData.chromosomes, function (idx, chr) { chr.name = chr.id; });
-
+        MetaData.chrom_map = DQX.attrMap(MetaData.chromosomes, 'id');
 
         MetaData.populations=[
             { freqid:'NRAF_WAF', name:"West Africa", color:DQX.Color(1,0,0) },

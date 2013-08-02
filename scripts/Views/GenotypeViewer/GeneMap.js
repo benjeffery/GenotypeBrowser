@@ -45,7 +45,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         ctx.save();
         ctx.strokeStyle = '#F00';
         ctx.beginPath();
-        data.snp_cache.intervals_being_fetched.forEach(function(interval) {
+        data.snp_cache.intervals_being_fetched(view.chrom).forEach(function(interval) {
           ctx.moveTo(scale(interval.start), 25);
           ctx.lineTo(scale(interval.start), 35);
           ctx.moveTo(scale(interval.start), 30);

@@ -32,12 +32,13 @@
         };
 
 
-        that.getGenotypes = function (start, end, snps, samples, callback) {
+        that.getGenotypes = function (chrom, start, end, snps, samples, callback) {
           if (samples.length > 0 && snps.length > 0) {
             //DQX.setProcessing('Fetching...');
             var sample_ids = samples.map(DQX.attr('ID'));
-            that.fetcher.fetch('MAL13', start, end, sample_ids, function (data) {
+            that.fetcher.fetch(chrom, start, end, sample_ids, function (data) {
                 if (data) {
+                  console.time("Insert SNPs");
                   snps.forEach(function (snp, i) {
                     snp.genotypes = [];
                   });
@@ -69,18 +70,19 @@
                     snp.rgb = snp.col;
                     snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
                   });
-                  callback(start, end, snps);
+                  callback(chrom, start, end, snps);
+                  console.timeEnd("Insert SNPs");
                 } else {
                   //We had a error getting the genotypes, returning null will mean this gets retried next time.
-                  callback(start, end, null);
+                  callback(chrom, start, end, null);
                 }
               //  DQX.stopProcessing();
               });
           } else {
-            callback(start, end, []);
+            callback(chrom, start, end, []);
           }
         };
-        that.snpProvider = function (start, end, samples, callback) {
+        that.snpProvider = function (chrom, start, end, samples, callback) {
           var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableSNPInfo);
           //fetcher.setMaxResultCount(1001);
           fetcher.addColumn('snpid', 'ST');
@@ -91,7 +93,7 @@
           fetcher.addColumn('ancestral', 'ST');
       //    DQX.setProcessing("Downloading...");
           var q = SQL.WhereClause.AND();
-          q.addComponent(SQL.WhereClause.CompareFixed('chrom', '=', '13'));
+          q.addComponent(SQL.WhereClause.CompareFixed('chrom', '=', MetaData.chrom_map[chrom].idx));
           q.addComponent(SQL.WhereClause.CompareFixed('pos', '>=', start));
           q.addComponent(SQL.WhereClause.CompareFixed('pos', '<', end));
           fetcher.getData(q, "pos",
@@ -110,7 +112,7 @@
                 )
               }
          //     DQX.stopProcessing();
-              that.getGenotypes(start, end, snps, samples, callback);
+              that.getGenotypes(chrom, start, end, snps, samples, callback);
             },
             DQX.createMessageFailFunction()
           );

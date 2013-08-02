@@ -2,13 +2,12 @@ define(["d3"],
   function (d3) {
     return function IntervalCache(provider, locator, updated) {
 
-
       var that = {};
       that.provider = provider;
       that.locator = locator;
       that.updated = updated;
-      that.intervals = [];
-      that.intervals_being_fetched = [];
+      that.intervals = {};
+      that._intervals_being_fetched = {};
       that.provider_queue = [];
       that.current_provider_requests = 0;
 
@@ -16,14 +15,14 @@ define(["d3"],
         return Array.prototype.push.apply(array, other);
       };
 
-      that.get = function (start, end, retrieve_missing) {
+      that.get = function (chrom, start, end, retrieve_missing) {
         var bisect, i, interval, last_match, matched_elements, matching_intervals, missing_intervals, ref;
-
+        that.intervals[chrom] = that.intervals[chrom] || [];
         if (retrieve_missing == null) retrieve_missing = true;
         if (start < 0) start = 0;
         if (end < 0) end = 0;
         if (start == end) return [];
-        matching_intervals = that.intervals.filter(function (interval) {
+        matching_intervals = that.intervals[chrom].filter(function (interval) {
           return interval.start <= end && start <= interval.end;
         });
         matched_elements = [];
@@ -102,16 +101,17 @@ define(["d3"],
 
         for (i = 0, ref = missing_intervals.length; i < ref; i++) {
           interval = missing_intervals[i];
-          that.intervals_being_fetched.push(interval);
-          that.intervals.splice(bisect(that.intervals, interval.start), 0, interval);
+          that._intervals_being_fetched[chrom] = that._intervals_being_fetched[chrom] || [];
+          that._intervals_being_fetched[chrom].push(interval);
+          that.intervals[chrom].splice(bisect(that.intervals[chrom], interval.start), 0, interval);
           interval.elements = [];
-          that._add_to_provider_queue(interval);
+          that._add_to_provider_queue(chrom, interval);
         }
         return matched_elements;
       };
 
-      that._add_to_provider_queue = function(interval) {
-        that.provider_queue.push(interval);
+      that._add_to_provider_queue = function(chrom, interval) {
+        that.provider_queue.push({chrom:chrom, interval:interval});
         if (that.provider_queue.length == 1) {
           that._process_provider_queue()
         }
@@ -120,7 +120,7 @@ define(["d3"],
       that._process_provider_queue = function() {
         if (that.current_provider_requests < 2 && that.provider_queue.length > 0) {
           var interval = that.provider_queue.pop();
-          that.provider(interval.start, interval.end, that._insert_received_data);
+          that.provider(interval.chrom, interval.interval.start, interval.interval.end, that._insert_received_data);
           that.current_provider_requests += 1;
         }
         if (that.provider_queue.length > 0) {
@@ -128,13 +128,13 @@ define(["d3"],
         }
       };
 
-      that._insert_received_data = function (start, end, data) {
+      that._insert_received_data = function (chrom, start, end, data) {
         that.current_provider_requests -= 1;
         var match;
-        match = that.intervals.filter(function (i) {
+        match = that.intervals[chrom].filter(function (i) {
           return i.start === start && i.end === end;
         });
-        that.intervals_being_fetched = that.intervals_being_fetched.filter(function (i) {
+        that._intervals_being_fetched[chrom] = that._intervals_being_fetched[chrom].filter(function (i) {
           return i.start != match[0].start;
         });
         if (match.length !== 1) {
@@ -145,13 +145,16 @@ define(["d3"],
           match[0].elements = data;
         } else {
           match[0].elements = null;
-          that.intervals = that.intervals.filter(function (i) {
+          that.intervals[chrom] = that.intervals[chrom].filter(function (i) {
             return i.elements !== null;
           });
         }
         return that.updated();
       };
 
+      that.intervals_being_fetched = function(chrom) {
+        return that._intervals_being_fetched[chrom] || [];
+      }
       return that;
     }
   }

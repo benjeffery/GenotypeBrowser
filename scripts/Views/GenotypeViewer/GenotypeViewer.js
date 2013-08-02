@@ -133,8 +133,8 @@
       };
       that.setSamples = function (sample_set) {
         that.data.samples = sample_set;
-        var provider = function(start, end, callback) {
-          that.snp_provider(start, end, sample_set, callback)
+        var provider = function(chrom, start, end, callback) {
+          that.snp_provider(that.view.chrom, start, end, sample_set, callback)
         };
         var locator = DQX.attr('pos');
         that.data.snp_cache = IntervalCache(provider, locator, that.newData);
@@ -274,17 +274,16 @@
           var gene_width = gene_info.stop - gene_info.start;
           that.view.genome_scale.domain([gene_info.start, gene_info.stop]);
           that.annotation_fetcher.setChromoID(gene_info.chromid);
+          that.view.chrom = gene_info.chromid;
           that.annotation_fetcher._fetchRange(gene_info.start, gene_info.stop,
             function (annotations) {
               that.data.annotations = annotations;
             }
             , DQX.createMessageFailFunction);
-          that.data.snps = that.data.snp_cache.get(gene_info.start, gene_info.stop);
         } else {
           that.data.gene_info = null;
           that.data.annotations = [];
           that.view.genome_scale.domain([0, 0]);
-          that.data.snps = [];
         }
         that.view.scroll_pos = 0;
       };
@@ -319,7 +318,7 @@
         if (force_update || that.data.snps.length == 0 || !_.isEqual(genome_scale, that.last_genome_scale_domain))
         {
           that.last_genome_scale_domain = genome_scale;
-          that.data.snps = that.data.snp_cache.get(genome_scale[0], genome_scale[1]);
+          that.data.snps = that.data.snp_cache.get(that.view.chrom, genome_scale[0], genome_scale[1]);
           //TODO fix anim and no jump on new data
   //        if (that.snps.length > 0) {
   //          current_range = {start: that.snps[0].pos, end: that.snps[that.snps.length-1].pos};
@@ -329,7 +328,7 @@
           if (snps.length % that.width() > 0)
             snps_per_pixel += 1;
           var snps_length = snps.length;
-          console.time('Draw');
+          console.time('Cache Draw');
           that.data.samples.forEach(function(sample, i) {
             //We want a canvas that is the next multiple of the number of snps
             sample.genotypes_canvas.width = Math.ceil(snps_length/snps_per_pixel);
