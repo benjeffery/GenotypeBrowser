@@ -3,6 +3,8 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
     return function GeneMap(bounding_box, clickSNPCallback) {
       var that = CanvasArea(bounding_box);
       that.clickSNPCallback = clickSNPCallback;
+      that.colours = [0xFF0000, 0x800000, 0xFFFF00, 0x808000, 0x00FF00,	0x008000,	0x00FFFF,
+      0x008080,	0x0000FF,	0x000080,	0xFF00FF, 0x800080];
 
       that.formatSI = function (number) {
         var prefix = d3.formatPrefix(parseFloat(number));
@@ -94,7 +96,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             }
             regions.push([i, snps_length-1]);
           } else {
-            //Find some groupings based on large jumps
+            //Find some groupings based on large jumps - regions are pairs of snp indexes
             var gaps = [];
             for(i = 1; i < snps_length; i+=1) {
               gaps.push([i-1, snps[i].pos - snps[i-1].pos])
@@ -118,17 +120,13 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             var i2 = regions[i][1];
             var pos = snps[i1].pos;
             var pos2 = snps[i2].pos;
-//            ctx.beginPath();
-//            ctx.moveTo(scale(pos), 25);
-//            ctx.lineTo(scale(pos), 40);
-//            ctx.bezierCurveTo(scale(pos), 75, snp_scale(i1), 75, snp_scale(i1), 100);
-//            ctx.stroke();
-            ctx.fillStyle = i % 2 ? DQX.getRGB(0,0,255,alpha/2) : DQX.getRGB(0,128,255,alpha/2);
+            //ctx.fillStyle = i % 2 ? DQX.getRGB(0,0,255,alpha/2) : DQX.getRGB(0,128,255,alpha/2);
+            ctx.fillStyle = DQX.getRGB(that.colours[pos % that.colours.length], alpha/2);
             ctx.beginPath();
-            ctx.moveTo(scale(pos), 40);
-            ctx.bezierCurveTo(scale(pos), 75, snp_scale(i1), 75, snp_scale(i1), 100);
-            ctx.lineTo(snp_scale(i2), 100);
-            ctx.bezierCurveTo(snp_scale(i2), 75, scale(pos2), 75,  scale(pos2), 40);
+            ctx.moveTo(scale(pos), 50);
+            ctx.bezierCurveTo(scale(pos), 75, snp_scale(i1+0.5), 75, snp_scale(i1+0.5), 100);
+            ctx.lineTo(snp_scale(i2+1), 100);
+            ctx.bezierCurveTo(snp_scale(i2+1.5), 75, scale(pos2), 75,  scale(pos2), 50);
             ctx.closePath();
             ctx.fill();
           }
