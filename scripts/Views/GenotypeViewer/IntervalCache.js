@@ -1,10 +1,12 @@
 define(["d3"],
   function (d3) {
-    return function IntervalCache(provider, locator, updated) {
+    return function IntervalCache(provider, locator, indexer, updated) {
 
       var that = {};
       that.provider = provider;
       that.locator = locator;
+      that.indexer = indexer;
+      that.indexed = [];
       that.updated = updated;
       that.intervals = {};
       that._intervals_being_fetched = {};
@@ -14,8 +16,37 @@ define(["d3"],
       that.merge = function (array, other) {
         return Array.prototype.push.apply(array, other);
       };
-      //TODO Chuuck requests to a multiple of 10 boundary or something to prevent small intervals
-      that.get = function (chrom, start, end, retrieve_missing) {
+
+      that.get_by_index = function(chrom, start, end, retrieve_missing) {
+        start = Math.floor(start);
+        end = Math.ceil(end);
+        var matching = that.indexed.filter(function(element,i) {
+          return i >= start && i <= end && element.chrom == chrom;
+        });
+        if (retrieve_missing && matching.length > 1) {
+          var previous = that.indexer(matching[0]);
+          for (var i = 1, ref = matching.length; i < ref; ++i) {
+            var current = that.indexer(matching[i]);
+            if (current != previous) {
+              //SNP indexes are not sequential
+              //Get for the region between the two missing SNPs
+              that.get_by_pos(chrom, that.locator(matching[i-1]), that.locator(matching[i]), true);
+            }
+          }
+          //TODO This could retrieve by pos and then insert the correct intervals
+          //For now just grab a bit at the sides if we didn't cover it
+          if (that.indexer(matching[0]) > start) {
+            that.get_by_pos(chrom, that.locator(matching[0])-50000, that.locator(matching[0]), true);
+          }
+          if (that.indexer(matching[matching.length-1]) < end) {
+            that.get_by_pos(chrom, that.locator(matching[matching.length-1]), that.locator(matching[matching.length-1])+50000, true);
+          }
+        }
+        return matching;
+      };
+
+      //TODO Chunk requests to a multiple of 10 boundary or something to prevent small intervals
+      that.get_by_pos = function (chrom, start, end, retrieve_missing) {
         var bisect, i, interval, last_match, matched_elements, matching_intervals, missing_intervals, ref;
         that.intervals[chrom] = that.intervals[chrom] || [];
         if (retrieve_missing == null) retrieve_missing = true;
@@ -143,6 +174,11 @@ define(["d3"],
         }
         if (data) {
           match[0].elements = data;
+          if (that.indexer) {
+            data.forEach(function(element) {
+              that.indexed[that.indexer(element)] = element;
+            });
+          }
         } else {
           match[0].elements = null;
           that.intervals[chrom] = that.intervals[chrom].filter(function (i) {
@@ -154,7 +190,7 @@ define(["d3"],
 
       that.intervals_being_fetched = function(chrom) {
         return that._intervals_being_fetched[chrom] || [];
-      }
+      };
       return that;
     }
   }

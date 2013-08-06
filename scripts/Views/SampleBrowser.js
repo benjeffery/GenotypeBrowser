@@ -102,6 +102,7 @@
         that.snpProvider = function (chrom, start, end, samples, callback) {
           var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableSNPInfo);
           //fetcher.setMaxResultCount(1001);
+          fetcher.addColumn('num', 'IN');
           fetcher.addColumn('snpid', 'ST');
           fetcher.addColumn('MutName', 'ST');
           fetcher.addColumn('pos', 'IN');
@@ -119,6 +120,8 @@
               for (var i = 0; i < data.snpid.length; i++) {
                 snps.push(
                   {
+                    chrom: chrom,
+                    num: data.num[i],
                     id: data.snpid[i],
                     mutation: data.MutName[i],
                     pos: data.pos[i],

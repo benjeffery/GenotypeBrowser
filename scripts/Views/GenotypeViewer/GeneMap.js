@@ -39,13 +39,24 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         });
         //Annotation rectangles
         ctx.fillStyle = "rgba(0,153,0,0.50)";
+        ctx.strokeStyle = "rgba(0,153,0,0.05)";
         data.annotations.forEach(function (annot) {
-          DQX.roundedRect(ctx, scale(annot.start), 25, scale(annot.width) - scale(0), 15, 6);
-          ctx.fill();
+          var width = scale(annot.width) - scale(0);
+          if (width > 2) {
+            ctx.beginPath();
+            DQX.roundedRect(ctx, scale(annot.start), 25, width, 15, Math.min(6, width/2));
+            ctx.fill();
+          }
+          else {
+            ctx.beginPath();
+            ctx.moveTo(scale(annot.start), 25);
+            ctx.lineTo(scale(annot.start), 40);
+            ctx.stroke();
+          }
         });
         //Loading indicator
         ctx.save();
-        ctx.strokeStyle = '#F00';
+        ctx.strokeStyle = "rgba(255,0,0,0.50)";
         ctx.beginPath();
         data.snp_cache.intervals_being_fetched(view.chrom).forEach(function(interval) {
           ctx.moveTo(scale(interval.start), 25);
@@ -65,7 +76,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             ctx.lineWidth = snp.selected ? 2 : 1;
             ctx.beginPath();
             ctx.moveTo(scale(snp.pos), 50);
-            ctx.bezierCurveTo(scale(snp.pos), 75, snp_scale(i + 0.5), 75, snp_scale(i + 0.5), 100);
+            ctx.bezierCurveTo(scale(snp.pos), 75, snp_scale(snp.num + 0.5), 75, snp_scale(snp.num + 0.5), 100);
             ctx.stroke();
           });
           //SNP Triangles and line on genome
@@ -84,12 +95,14 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         }
 
         //If we aren't doing lines then do grouped linking
+        var fixed_width;
         alpha = tween.manual(snp_width, 5, 2);
         if (alpha > 0) {
           var regions = [];
           //Decide if we want to group or just use fixed width hilight
           if (snps_length > 5000) {
             //Use fixed width
+            fixed_width = true;
             var jump = Math.ceil(snps_length/10);
             for (i = 0; i+jump < snps_length; i += jump) {
               regions.push([i, i+jump]);
@@ -97,6 +110,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             regions.push([i, snps_length-1]);
           } else {
             //Find some groupings based on large jumps - regions are pairs of snp indexes
+            fixed_width = false;
             var gaps = [];
             for(i = 1; i < snps_length; i+=1) {
               gaps.push([i-1, snps[i].pos - snps[i-1].pos])
@@ -116,12 +130,12 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           ctx.strokeStyle = DQX.getRGB(0,0,0,alpha);
           ctx.lineWidth = 2;
           for (var i = 0; i < regions.length; i += 1) {
-            var i1 = regions[i][0];
-            var i2 = regions[i][1];
-            var pos = snps[i1].pos;
-            var pos2 = snps[i2].pos;
+            var i1 = snps[regions[i][0]].num;
+            var i2 = snps[regions[i][1]].num;
+            var pos = snps[regions[i][0]].pos;
+            var pos2 = snps[regions[i][1]].pos;
             //ctx.fillStyle = i % 2 ? DQX.getRGB(0,0,255,alpha/2) : DQX.getRGB(0,128,255,alpha/2);
-            ctx.fillStyle = DQX.getRGB(that.colours[pos % that.colours.length], alpha/2);
+            ctx.fillStyle = DQX.getRGB(that.colours[(fixed_width ? i : pos) % that.colours.length], alpha/2);
             ctx.beginPath();
             ctx.moveTo(scale(pos), 50);
             ctx.bezierCurveTo(scale(pos), 75, snp_scale(i1+0.5), 75, snp_scale(i1+0.5), 100);
@@ -139,12 +153,16 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         ctx.fillStyle = DQX.getRGB(255, 255, 255, 1);
         ctx.textAlign = 'left';
         data.annotations.forEach(function (annot) {
-          ctx.strokeText(annot.name, scale(annot.start), 25, scale(annot.width) - scale(0));
-          ctx.fillText(annot.name, scale(annot.start), 25, scale(annot.width) - scale(0));
+          var width = scale(annot.width) - scale(0);
+          if (width > 5 && annot.name != "-") {
+            ctx.strokeText(annot.name, scale(annot.start), 25, scale(annot.width) - scale(0));
+            ctx.fillText(annot.name, scale(annot.start), 25, scale(annot.width) - scale(0));
+          }
         });
       };
 
       that._click = function (pos, view, data) {
+        var snps = data.snps;
         var canvas = document.createElement('canvas');
         canvas.width = that.width();
         canvas.height = that.height();

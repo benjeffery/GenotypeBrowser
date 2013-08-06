@@ -13,23 +13,26 @@
       that.snpProvider = snp_provider;
       that.annotationProvider = annotation_provider;
 
+      //Rescale the SNPs based on a genomic range
       that.rescaleGenomic = function (target) {
         var in_range = that.data.snps.map(function (snp) {
           return (snp.pos >= target.left && snp.pos <= target.right);
         });
         var start = in_range.indexOf(true);
         var stop = in_range.lastIndexOf(true);
-        if (start != 1 && stop != -1) {
-          that.view.snp_scale.tweenTo({left: start, right: stop + 1});
+        if (start != -1 && stop != -1) {
+          that.view.snp_scale.tweenTo({left: that.data.snps[start].num, right: that.data.snps[stop].num + 1});
         }
       };
+      //Rescale the genome based on a range of SNPs
       that.rescaleSNPic = function (target) {
-        target.left = Math.max(Math.floor(target.left), 0);
-        target.right = Math.min(Math.ceil(target.right), that.data.snps.length - 1);
-        var start = that.data.snps[target.left].pos;
-        var stop = that.data.snps[target.right].pos;
-        if (start != 1 && stop != -1) {
-          that.view.genome_scale.tweenTo({left: start, right: stop});
+        var in_range = that.data.snps.map(function (snp) {
+          return (snp.num >= target.left && snp.num <= target.right);
+        });
+        var start = in_range.indexOf(true);
+        var stop = in_range.lastIndexOf(true);
+        if (start != -1 && stop != -1) {
+          that.view.genome_scale.tweenTo({left: that.data.snps[start].pos, right: that.data.snps[stop].pos});
         }
       };
 
@@ -45,11 +48,13 @@
         if (pos.y < that.gene_map_height && pos.x > that.row_header_width) {
           pos.x -= that.row_header_width;
           that.rescaleGenomic(that.view.genome_scale.zoom(delta, pos.x));
+          that.last_view_change = 'genome';
         }
         if (pos.y > that.gene_map_height && pos.x > that.row_header_width) {
           pos.x -= that.row_header_width;
           that.view.snp_scale.zoom(delta, pos.x);
-          //that.rescaleSNPic();
+          that.last_view_change = 'snps';
+          that.rescaleSNPic(that.view.snp_scale.zoom(delta, pos.x));
         }
       };
       that.dragStart = function (ev) {
@@ -83,6 +88,7 @@
             that.view.scroll_pos = that.max_scroll();
         }
         that.needUpdate = "dragMove";
+        that.last_view_change = that.drag;
       };
       that.click = function (ev) {
         that.components.forEach(function (component) {
@@ -138,7 +144,8 @@
           that.snpProvider(that.view.chrom, start, end, sample_set, callback)
         };
         var locator = DQX.attr('pos');
-        that.data.snp_cache = IntervalCache(provider, locator, that.newData);
+        var indexer = DQX.attr('num')
+        that.data.snp_cache = IntervalCache(provider, locator, indexer, that.newData);
         sample_set.forEach(function (sample) {
           sample.genotypes_canvas = document.createElement('canvas');
           sample.genotypes_canvas.height = 1;
@@ -280,10 +287,15 @@
           that.view.genome_scale.domain([0, 0]);
         }
         that.view.scroll_pos = 0;
+        that.last_view_change = 'genome';
       };
 
       that.newData = function() {
         that.updateSNPs(true);
+      };
+      that.newAnnotations = function() {
+        var genome_scale = that.view.genome_scale.domain();
+        that.data.annotations = that.data.annotation_cache.get_by_pos(that.view.chrom, Math.floor(genome_scale[0]-25000), Math.ceil(genome_scale[1]+25000));
       };
 
       //Initialise the viewer
@@ -300,17 +312,26 @@
       that.needUpdate = "Init";
 
       that.updateSNPs = function(force_update) {
-        var genome_scale = that.view.genome_scale.domain();
-        that.data.annotations = that.data.annotation_cache.get(that.view.chrom, Math.floor(genome_scale[0]), Math.ceil(genome_scale[1]));
-        if (force_update || that.data.snps.length == 0 || !_.isEqual(genome_scale, that.last_genome_scale_domain))
+        var genome_scale = that.view.genome_scale.targetDomain();
+        var snp_scale = that.view.snp_scale.targetDomain();
+        that.data.annotations = that.data.annotation_cache.get_by_pos(that.view.chrom, Math.floor(genome_scale[0]-25000), Math.ceil(genome_scale[1]+25000));
+        //So  if the last move was genome we select the SNPs from genome and rescale the SNPS.
+        var extra_width;
+        if (that.last_view_change == 'genome') {
+          extra_width = (genome_scale[1] - genome_scale[0]) * 0.2;
+          that.data.snps = that.data.snp_cache.get_by_pos(that.view.chrom, genome_scale[0] - extra_width, genome_scale[1]+extra_width);
+          that.rescaleGenomic({left: genome_scale[0], right:genome_scale[1]});
+        } else {
+          //Otherwise we select based on the SNPs and rescale the genome
+          extra_width = (snp_scale[1] - snp_scale[0]) * 0.2;
+          that.data.snps = that.data.snp_cache.get_by_index(that.view.chrom, snp_scale[0]-extra_width, snp_scale[1]+extra_width, true);
+          that.rescaleSNPic({left: snp_scale[0], right:snp_scale[1]});
+        }
+        var snps = that.data.snps;
+        var current_snp_range = snps.length > 0 ? [snps[0].pos, snps[snps.length-1].pos]: [0,0];
+        if (force_update || snps.length == 0 || !_.isEqual(current_snp_range, that.last_snp_range))
         {
-          that.last_genome_scale_domain = genome_scale;
-          that.data.snps = that.data.snp_cache.get(that.view.chrom, genome_scale[0], genome_scale[1]);
-          //TODO fix anim and no jump on new data
-  //        if (that.snps.length > 0) {
-  //          current_range = {start: that.snps[0].pos, end: that.snps[that.snps.length-1].pos};
-  //        }
-          var snps = that.data.snps;
+          that.last_snp_range = current_snp_range;
           var snps_per_pixel = Math.floor(snps.length/that.width());
           if (snps.length % that.width() > 0)
             snps_per_pixel += 1;
@@ -370,7 +391,6 @@
             }
           });
           console.timeEnd('Draw');
-          that.view.snp_scale.tweenTo({left:0, right:that.data.snps.length});
           that.needUpdate = 'new snps';
         }
       };
@@ -431,7 +451,7 @@
         snps: []
       };
       var locator = DQX.attr('start');
-      that.data.annotation_cache = IntervalCache(that.annotationProvider, locator, that.tick);
+      that.data.annotation_cache = IntervalCache(that.annotationProvider, locator, null, that.newAnnotations);
 
       //View parameters
       that.view = {
@@ -459,6 +479,7 @@
         scroll_pos: 0
       };
       that.components = ['genotypes', 'column_header', 'gene_map', 'row_header', 'controls'];
+      that.last_view_change = 'genome';
       
 
       //How to divide the samples

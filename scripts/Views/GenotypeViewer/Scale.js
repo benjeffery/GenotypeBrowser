@@ -17,6 +17,13 @@ define(["d3","tween"],
                         delete that.currentTween;
                     });
             };
+            //Returns current tween target or if no tween then current
+            that.targetDomain = function() {
+              if (that.currentTween)
+                return [that.currentTarget.left, that.currentTarget.right];
+              else
+                return that.domain();
+            };
 
             that.scale_clamp = function(target, min, max) {
                 if (target.left <= min && target.right >= max) {
