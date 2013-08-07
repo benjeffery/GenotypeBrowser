@@ -47,7 +47,7 @@
         var delta = doubleclick ? 1 : DQX.getMouseWheelDelta(ev);
         if (pos.y < that.gene_map_height && pos.x > that.row_header_width) {
           pos.x -= that.row_header_width;
-          that.rescaleGenomic(that.view.genome_scale.zoom(delta, pos.x));
+          that.rescaleGenomic(that.view.genome_scale.scale_clamp(that.view.genome_scale.zoom(delta, pos.x), 0, MetaData.chrom_map[that.view.chrom].len*1000000));
           that.last_view_change = 'genome';
         }
         if (pos.y > that.gene_map_height && pos.x > that.row_header_width) {
@@ -278,7 +278,6 @@
       that.set_gene = function (gene_info) {
         if (gene_info) {
           that.data.gene_info = gene_info;
-          var gene_width = gene_info.stop - gene_info.start;
           that.view.genome_scale.domain([gene_info.start, gene_info.stop]);
           that.view.chrom = gene_info.chromid;
 
@@ -462,13 +461,15 @@
         controls: Controls({}, {
           zoom_in: function () {
             that.rescaleGenomic(that.view.genome_scale.zoom(1));
+            that.last_view_change = 'genome';
           },
           zoom_out: function () {
             that.rescaleGenomic(that.view.genome_scale.zoom(-1));
+            that.last_view_change = 'genome';
           },
           zoom_all: function () {
-            that.view.snp_scale.tweenTo({left: 0, right: that.data.snps.length});
-            that.view.genome_scale.tweenTo({left: that.data.gene_info.start, right: that.data.gene_info.stop});
+            that.view.genome_scale.tweenTo({left: 0, right: MetaData.chrom_map[that.view.chrom].len*1000000});
+            that.last_view_change = 'genome';
           }
         }),
         genome_scale: Scale(),
