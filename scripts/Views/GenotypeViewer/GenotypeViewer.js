@@ -3,11 +3,11 @@
   "DQX/FramePanel", "MetaData", "Views/GenotypeViewer/ColumnHeader",
   "Views/GenotypeViewer/RowHeader", "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
   "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
-  "Views/GenotypeViewer/IntervalCache"],
+  "Views/GenotypeViewer/IntervalCache", "Views/GenotypeViewer/SNPCache"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
             SVG,
             FramePanel, MetaData, ColumnHeader,
-            RowHeader, GeneMap, Genotypes, TouchEvents, Controls, Scale, IntervalCache) {
+            RowHeader, GeneMap, Genotypes, TouchEvents, Controls, Scale, IntervalCache, SNPCache) {
     return function GenotypeViewer(frame, snp_provider, annotation_provider) {
       var that = {};
       that.snpProvider = snp_provider;
@@ -15,25 +15,15 @@
 
       //Rescale the SNPs based on a genomic range
       that.rescaleGenomic = function (target) {
-        var in_range = that.data.snps.map(function (snp) {
-          return (snp.pos >= target.left && snp.pos <= target.right);
-        });
-        var start = in_range.indexOf(true);
-        var stop = in_range.lastIndexOf(true);
-        if (start != -1 && stop != -1) {
-          that.view.snp_scale.tweenTo({left: that.data.snps[start].num, right: that.data.snps[stop].num + 1});
-        }
+        var left = that.data.snp_cache.posToIndex(that.view.chrom, target.left);
+        var right = that.data.snp_cache.posToIndex(that.view.chrom, target.right);
+        that.view.snp_scale.tweenTo({left: left, right: right});
       };
       //Rescale the genome based on a range of SNPs
       that.rescaleSNPic = function (target) {
-        var in_range = that.data.snps.map(function (snp) {
-          return (snp.num >= target.left && snp.num <= target.right);
-        });
-        var start = in_range.indexOf(true);
-        var stop = in_range.lastIndexOf(true);
-        if (start != -1 && stop != -1) {
-          that.view.genome_scale.tweenTo({left: that.data.snps[start].pos, right: that.data.snps[stop].pos});
-        }
+        var left = that.data.snp_cache.indexToPos(that.view.chrom, target.left);
+        var right = that.data.snp_cache.indexToPos(that.view.chrom, target.right);
+        that.view.genome_scale.tweenTo({left: left, right: right});
       };
 
       that.max_scroll = function () {
@@ -143,9 +133,7 @@
         var provider = function(chrom, start, end, callback) {
           that.snpProvider(that.view.chrom, start, end, sample_set, callback)
         };
-        var locator = DQX.attr('pos');
-        var indexer = DQX.attr('num')
-        that.data.snp_cache = IntervalCache(provider, locator, indexer, that.newData);
+        that.data.snp_cache = SNPCache(provider, that.newData);
         sample_set.forEach(function (sample) {
           sample.genotypes_canvas = document.createElement('canvas');
           sample.genotypes_canvas.height = 1;
@@ -280,7 +268,7 @@
           that.data.gene_info = gene_info;
           that.view.genome_scale.domain([gene_info.start, gene_info.stop]);
           that.view.chrom = gene_info.chromid;
-
+          that.rescaleGenomic({left: gene_info.start, right:gene_info.stop})
         } else {
           that.data.gene_info = null;
           that.view.genome_scale.domain([0, 0]);
@@ -311,92 +299,89 @@
       that.needUpdate = "Init";
 
       that.updateSNPs = function(force_update) {
-        var genome_scale = that.view.genome_scale.targetDomain();
-        var snp_scale = that.view.snp_scale.targetDomain();
-        that.data.annotations = that.data.annotation_cache.get_by_pos(that.view.chrom, Math.floor(genome_scale[0]-25000), Math.ceil(genome_scale[1]+25000));
-        //So  if the last move was genome we select the SNPs from genome and rescale the SNPS.
-        var extra_width;
-        if (that.last_view_change == 'genome') {
-          extra_width = (genome_scale[1] - genome_scale[0]) * 0.2;
-          that.data.snps = that.data.snp_cache.get_by_pos(that.view.chrom, genome_scale[0] - extra_width, genome_scale[1]+extra_width);
-          that.rescaleGenomic({left: genome_scale[0], right:genome_scale[1]});
-        } else {
-          //Otherwise we select based on the SNPs and rescale the genome
-          extra_width = (snp_scale[1] - snp_scale[0]) * 0.2;
-          that.data.snps = that.data.snp_cache.get_by_index(that.view.chrom, snp_scale[0]-extra_width, snp_scale[1]+extra_width, true);
-          that.rescaleSNPic({left: snp_scale[0], right:snp_scale[1]});
-        }
+        var view = that.view;
+        var genome_scale = view.genome_scale.targetDomain();
+        var snp_scale = view.snp_scale.targetDomain();
+        that.data.annotations = that.data.annotation_cache.get_by_pos(view.chrom, Math.floor(genome_scale[0]-25000), Math.ceil(genome_scale[1]+25000));
+        that.data.snp_cache.retrieve_by_index(view.chrom, view.start_snp, view.end_snp);
+        that.data.snps = that.data.snp_cache.snps[view.chrom];
         var snps = that.data.snps;
-        var current_snp_range = snps.length > 0 ? [snps[0].pos, snps[snps.length-1].pos]: [0,0];
-        if (force_update || snps.length == 0 || !_.isEqual(current_snp_range, that.last_snp_range))
+        //var current_snp_range = snps.length > 0 ? [snps[0].pos, snps[snps.length-1].pos]: [0,0];
+        //TODO Cache invalidation
+        if (true)//force_update || snps.length == 0 || !_.isEqual(current_snp_range, that.last_snp_range))
         {
-          that.last_snp_range = current_snp_range;
-          var snps_per_pixel = Math.floor(snps.length/that.width());
-          if (snps.length % that.width() > 0)
+          //that.last_snp_range = current_snp_range;
+          var num_snps = snp_scale[1]-snp_scale[0];
+          var snps_per_pixel = Math.floor(num_snps/that.width());
+          if (num_snps % that.width() > 0)
             snps_per_pixel += 1;
-          var snps_length = snps.length;
-          console.time('Cache Draw');
+          num_snps = view.end - view.start;
+          console.time('draw');
           that.data.samples.forEach(function(sample, i) {
             //We want a canvas that is the next multiple of the number of snps
-            sample.genotypes_canvas.width = Math.ceil(snps_length/snps_per_pixel);
-            if (that.data.snps.length > 0) {
+            sample.genotypes_canvas.width = Math.ceil(num_snps/snps_per_pixel);
+            if (num_snps > 0) {
               var ctx = sample.genotypes_canvas.getContext("2d");
-              var image_data = ctx.createImageData(that.data.snps.length, 1);
+              var image_data = ctx.createImageData(num_snps, 1);
               var data = image_data.data;
               var p = 0;
               //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
-              for(var j=0; j<snps_length; j+= snps_per_pixel) {
-                var genotype = snps[j].genotypes[i];
-                var pixel = genotype.pixel;
-                data[4*p] = pixel[0];
-                data[4*p+1] = pixel[1];
-                data[4*p+2] = pixel[2];
-                data[4*p+3] = 255;
-                p++;
-//                var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
-//                var num_snps_in_pixel = 0;
-//                var found_alts = false;
-//                for (var k=j; k < j+snps_per_pixel && k < snps_length; k++) {
-//                  var genotype = snps[k].genotypes[i];
-//                  var pixel = genotype.pixel;
-//                  if (genotype.gt == 1)
-//                    if (found_alts) {
-//                      result_pixel_r += pixel[0];
-//                      result_pixel_g += pixel[1];
-//                      result_pixel_b += pixel[2];
-//                      num_snps_in_pixel += 1;
-//                    } else {
-//                      found_alts = true;
-//                      result_pixel_r = pixel[0];
-//                      result_pixel_g = pixel[1];
-//                      result_pixel_b = pixel[2];
-//                      num_snps_in_pixel = 1
-//                    }
-//                  else
-//                    if (!found_alts) {
-//                      result_pixel_r += pixel[0];
-//                      result_pixel_g += pixel[1];
-//                      result_pixel_b += pixel[2];
-//                      num_snps_in_pixel += 1;
-//                    }
-//                }
-//                data[4*p] = result_pixel_r/num_snps_in_pixel;
-//                data[4*p+1] = result_pixel_g/num_snps_in_pixel;
-//                data[4*p+2] = result_pixel_b/num_snps_in_pixel;
+              for(var j=view.start; j<num_snps; j+= snps_per_pixel) {
+//                var genotype = snps[j].genotypes[i];
+//                var pixel = genotype.pixel;
+//                data[4*p] = pixel[0];
+//                data[4*p+1] = pixel[1];
+//                data[4*p+2] = pixel[2];
 //                data[4*p+3] = 255;
 //                p++;
+                var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
+                var num_snps_in_pixel = 0;
+                var found_alts = false;
+                for (var k=j; k < j+snps_per_pixel && k < num_snps; k++) {
+                  var genotype = snps[k].genotypes[i];
+                  var pixel = genotype.pixel;
+                  if (genotype.gt == 1)
+                    if (found_alts) {
+                      result_pixel_r += pixel[0];
+                      result_pixel_g += pixel[1];
+                      result_pixel_b += pixel[2];
+                      num_snps_in_pixel += 1;
+                    } else {
+                      found_alts = true;
+                      result_pixel_r = pixel[0];
+                      result_pixel_g = pixel[1];
+                      result_pixel_b = pixel[2];
+                      num_snps_in_pixel = 1
+                    }
+                  else
+                    if (!found_alts) {
+                      result_pixel_r += pixel[0];
+                      result_pixel_g += pixel[1];
+                      result_pixel_b += pixel[2];
+                      num_snps_in_pixel += 1;
+                    }
+                }
+                data[4*p] = result_pixel_r/num_snps_in_pixel;
+                data[4*p+1] = result_pixel_g/num_snps_in_pixel;
+                data[4*p+2] = result_pixel_b/num_snps_in_pixel;
+                data[4*p+3] = 255;
+                p++;
               }
               ctx.putImageData(image_data,0,0);
             }
           });
-          console.timeEnd('Draw');
-          that.needUpdate = 'new snps';
+          console.timeEnd('draw');
+        that.needUpdate = 'new snps';
         }
       };
       that.throttledUpdateSNPs = _.throttle(that.updateSNPs, 250);
 
       var led = false;
       that.tick = function (event) {
+        var snp_scale = that.view.snp_scale.domain();
+        var extra_width = (snp_scale[1] - snp_scale[0]) * 0.2;
+        that.view.start_snp =  Math.floor(snp_scale[0] - extra_width);
+        that.view.end_snp = Math.ceil(snp_scale[1] + extra_width);
         that.throttledUpdateSNPs();
         var ctx;
         var updated = false;
@@ -477,7 +462,8 @@
         snp_scale: Scale(),
         compress: false,
         row_height: that.row_height,
-        scroll_pos: 0
+        scroll_pos: 0,
+        chrom: 'MAL13'
       };
       that.components = ['genotypes', 'column_header', 'gene_map', 'row_header', 'controls'];
       that.last_view_change = 'genome';

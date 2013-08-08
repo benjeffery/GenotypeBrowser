@@ -55,7 +55,7 @@
             var sample_ids = samples.map(DQX.attr('ID'));
             that.fetcher.fetch(chrom, start, end, sample_ids, function (data) {
                 if (data) {
-                  console.time("Insert SNPs");
+                  //console.time("Insert SNPs");
                   snps.forEach(function (snp, i) {
                     snp.genotypes = [];
                   });
@@ -88,7 +88,7 @@
                     snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
                   });
                   callback(chrom, start, end, snps);
-                  console.timeEnd("Insert SNPs");
+                  //console.timeEnd("Insert SNPs");
                 } else {
                   //We had a error getting the genotypes, returning null will mean this gets retried next time.
                   callback(chrom, start, end, null);
