@@ -370,7 +370,7 @@
               ctx.putImageData(image_data,0,0);
             }
           });
-          console.timeEnd('draw');
+         // console.timeEnd('draw');
         that.needUpdate = 'new snps';
         }
       };
@@ -380,8 +380,8 @@
       that.tick = function (event) {
         var snp_scale = that.view.snp_scale.domain();
         var extra_width = (snp_scale[1] - snp_scale[0]) * 0.2;
-        that.view.start_snp =  Math.floor(snp_scale[0] - extra_width);
-        that.view.end_snp = Math.ceil(snp_scale[1] + extra_width);
+        that.view.start_snp =  Math.max(0, Math.floor(snp_scale[0] - extra_width));
+        that.view.end_snp = Math.min(that.data.snp_cache.snp_positions[that.view.chrom].length, Math.ceil(snp_scale[1] + extra_width));
         that.throttledUpdateSNPs();
         var ctx;
         var updated = false;
@@ -453,6 +453,7 @@
             that.last_view_change = 'genome';
           },
           zoom_all: function () {
+            that.view.snp_scale.tweenTo({left: 0, right: that.data.snps.length});
             that.view.genome_scale.tweenTo({left: 0, right: MetaData.chrom_map[that.view.chrom].len*1000000});
             that.last_view_change = 'genome';
           }

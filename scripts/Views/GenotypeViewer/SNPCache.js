@@ -19,7 +19,7 @@ define(["lodash", "d3", "MetaData"],
       that.fetch_state = {};
       //TODO Should come from server
       that.snp_positions['MAL13'] = new Uint32Array(MetaData.ch13pos);
-      that.fetch_state['MAL13'] = new Uint8Array(Math.floor(that.snp_positions['MAL13'].length / CHUNK_SIZE));
+      that.fetch_state['MAL13'] = new Uint8Array(Math.ceil(that.snp_positions['MAL13'].length / CHUNK_SIZE));
       that.snps['MAL13'] = [];
 
       that.provider_queue = [];
@@ -33,7 +33,7 @@ define(["lodash", "d3", "MetaData"],
         end = Math.ceil(end / CHUNK_SIZE);
         var fetch_state = that.fetch_state[chrom];
         for (var i = start; i < end; ++i)
-          if (!fetch_state[i]) {
+          if (!fetch_state[i] && i < fetch_state.length) {
             fetch_state[i] = FETCHING;
             that._add_to_provider_queue(chrom, i)
           }
@@ -82,11 +82,12 @@ define(["lodash", "d3", "MetaData"],
         if (that.current_provider_requests < 2 && that.provider_queue.length > 0) {
           var chunk = that.provider_queue.pop();
           var start = chunk.chunk * CHUNK_SIZE;
-          var end = Math.min(that.snp_positions[chunk.chrom].length, (chunk.chunk + 1) * CHUNK_SIZE);
-          that.provider(chunk.chrom,
-                        that.snp_positions[chunk.chrom][start],
-                        that.snp_positions[chunk.chrom][end],
-                        that._insert_received_data);
+          var end = Math.min(that.snp_positions[chunk.chrom].length-1, (chunk.chunk + 1) * CHUNK_SIZE);
+          console.log('fetch ' + start +':'+ end);
+        //  that.provider(chunk.chrom,
+          //              that.snp_positions[chunk.chrom][start],
+            //            that.snp_positions[chunk.chrom][end],
+              //          that._insert_received_data);
           that.current_provider_requests += 1;
         }
         if (that.provider_queue.length > 0) {

@@ -3,7 +3,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
     return function GeneMap(bounding_box, clickSNPCallback) {
       var that = CanvasArea(bounding_box);
       that.clickSNPCallback = clickSNPCallback;
-      that.colours = [0xFF0000, 0x800000, 0xFFFF00, 0x808000, 0x00FF00,	0x008000,	0x00FFFF,
+      that.colours = [0x800000, 0xFF0000, 0xFFFF00, 0x808000, 0x00FF00,	0x008000,	0x00FFFF,
       0x008080,	0x0000FF,	0x000080,	0xFF00FF, 0x800080];
 
       that.formatSI = function (number) {
@@ -111,11 +111,11 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           if (snps_length > 5000) {
             //Use fixed width
             fixed_width = true;
-            var jump = Math.ceil(snps_length/10);
-            for (i = view.start_snp; i+jump < view.end_snp; i += jump) {
+            var jump = 1000;
+            for (i = Math.floor(view.start_snp/jump)*jump; i+jump < positions.length; i += jump) {
               regions.push([i, i+jump]);
             }
-            regions.push([i, view.end_snp-1]);
+            regions.push([i, Math.min(i+jump, positions.length-1)]);
           } else {
             //Find some groupings based on large jumps - regions are pairs of snp indexes
             fixed_width = false;
@@ -127,11 +127,11 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             gaps = gaps.slice(0, Math.min(Math.ceil(gaps.length/20),20));
             gaps.sort(function(a,b) {return a[0]-b[0]});
             if (gaps.length > 0) {
-              regions.push([0, gaps[0][0]]);
+              regions.push([view.start_snp, gaps[0][0]]);
               for (i = 0; i < gaps.length-1; i += 1) {
                 regions.push([gaps[i][0]+1, gaps[i+1][0]]);
               }
-              regions.push([gaps[gaps.length-1][0]+1, snps_length-1]);
+              regions.push([gaps[gaps.length-1][0]+1, view.end_snp-1]);
             }
           }
           ctx.save();
@@ -143,7 +143,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             var pos = positions[i1];
             var pos2 = positions[i2];
             //ctx.fillStyle = i % 2 ? DQX.getRGB(0,0,255,alpha/2) : DQX.getRGB(0,128,255,alpha/2);
-            ctx.fillStyle = DQX.getRGB(that.colours[(fixed_width ? i : pos) % that.colours.length], alpha/2);
+            ctx.fillStyle = DQX.getRGB(that.colours[(fixed_width ? i1/jump : i1) % that.colours.length], alpha/2);
             ctx.beginPath();
             ctx.moveTo(scale(pos), 50);
             ctx.bezierCurveTo(scale(pos), 75, snp_scale(i1+0.5), 75, snp_scale(i1+0.5), 100);
