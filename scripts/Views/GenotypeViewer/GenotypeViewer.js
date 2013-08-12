@@ -315,9 +315,10 @@
           var snps_per_pixel = Math.floor(num_snps/that.width());
           if (num_snps % that.width() > 0)
             snps_per_pixel += 1;
-          num_snps = view.end - view.start;
+          num_snps = view.end_snp - view.start_snp;
           console.time('draw');
-          that.data.samples.forEach(function(sample, i) {
+          var genotypes = that.data.snp_cache.genotypes[that.view.chrom];
+          that.data.samples.forEach(function(sample, s) {
             //We want a canvas that is the next multiple of the number of snps
             sample.genotypes_canvas.width = Math.ceil(num_snps/snps_per_pixel);
             if (num_snps > 0) {
@@ -326,7 +327,7 @@
               var data = image_data.data;
               var p = 0;
               //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
-              for(var j=view.start_snp; j<num_snps; j+= snps_per_pixel) {
+              for(var j=view.start_snp; j<view.end_snp; j+= snps_per_pixel) {
 //                var genotype = snps[j].genotypes[i];
 //                var pixel = genotype.pixel;
 //                data[4*p] = pixel[0];
@@ -337,27 +338,29 @@
                 var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
                 var num_snps_in_pixel = 0;
                 var found_alts = false;
+                var r = genotypes[s].r;
+                var g = genotypes[s].g;
+                var b = genotypes[s].b;
+                var gt = genotypes[s].gt;
                 for (var k=j; k < j+snps_per_pixel && k < num_snps; k++) {
-                  var genotype = snps[k].genotypes[i];
-                  var pixel = genotype.pixel;
-                  if (genotype.gt == 1)
+                  if (gt[k] == 1)
                     if (found_alts) {
-                      result_pixel_r += pixel[0];
-                      result_pixel_g += pixel[1];
-                      result_pixel_b += pixel[2];
+                      result_pixel_r += r[k];
+                      result_pixel_g += g[k];
+                      result_pixel_b += b[k];
                       num_snps_in_pixel += 1;
                     } else {
                       found_alts = true;
-                      result_pixel_r = pixel[0];
-                      result_pixel_g = pixel[1];
-                      result_pixel_b = pixel[2];
+                      result_pixel_r = r[k];
+                      result_pixel_g = g[k];
+                      result_pixel_b = b[k];
                       num_snps_in_pixel = 1
                     }
                   else
                     if (!found_alts) {
-                      result_pixel_r += pixel[0];
-                      result_pixel_g += pixel[1];
-                      result_pixel_b += pixel[2];
+                      result_pixel_r += r[k];
+                      result_pixel_g += g[k];
+                      result_pixel_b += b[k];
                       num_snps_in_pixel += 1;
                     }
                 }
@@ -370,7 +373,7 @@
               ctx.putImageData(image_data,0,0);
             }
           });
-         // console.timeEnd('draw');
+          console.timeEnd('draw');
         that.needUpdate = 'new snps';
         }
       };

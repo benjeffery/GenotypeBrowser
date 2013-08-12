@@ -31,11 +31,11 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             });
           }
           else {
-//            var pixel_width = view.snp_scale(snps.length) - view.snp_scale(0);
-//            var x_offset = view.snp_scale(snps[0].num);
-//            data.samples.forEach(function (sample, i) {
-//              ctx.drawImage(sample.genotypes_canvas,x_offset,sample.vert + y_off,pixel_width,row_height);
-//            });
+            var pixel_width = view.snp_scale(view.end_snp) - view.snp_scale(view.start_snp);
+            var x_offset = 0//view.start_snp;
+            data.samples.forEach(function (sample, i) {
+              ctx.drawImage(sample.genotypes_canvas,x_offset,sample.vert + y_off,pixel_width,row_height);
+            });
           }
 
 
