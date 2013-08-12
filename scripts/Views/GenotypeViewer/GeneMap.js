@@ -120,7 +120,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             //Find some groupings based on large jumps - regions are pairs of snp indexes
             fixed_width = false;
             var gaps = [];
-            for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
+            for (i = view.start_snp+1, end = view.end_snp; i < end; ++i) {
               gaps.push([i-1, positions[i] - positions[i-1]])
             }
             gaps.sort(function(a,b) {return b[1]-a[1]});

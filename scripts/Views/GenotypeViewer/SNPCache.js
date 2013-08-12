@@ -5,7 +5,7 @@ define(["lodash", "d3", "MetaData"],
       var UNFETCHED = 0;
       var FETCHING = 1;
       var FETCHED = 2;
-      var CHUNK_SIZE = 1000;
+      var CHUNK_SIZE = 2000;
 
       var that = {};
       that.provider = provider;
@@ -45,7 +45,7 @@ define(["lodash", "d3", "MetaData"],
       };
 
       that.indexToPos = function (chrom, index) {
-        index = Math.max(0, index);
+        index = Math.max(0, Math.floor(index));
         if (index < that.snp_positions[chrom].length)
           return that.snp_positions[chrom][index];
         else
@@ -76,7 +76,7 @@ define(["lodash", "d3", "MetaData"],
           });
           _(data).forEach(function (snp, i) {
             var k = i + start_index;
-            that.snps[chrom][k] = data[i];
+            that.snps[chrom][k] = snp;
             _(that.samples).forEach(function (sample,j) {
               genotypes[j].alt[k] = Math.min(255,snp.genotypes[j].alt);
               genotypes[j].ref[k] = Math.min(255,snp.genotypes[j].ref);

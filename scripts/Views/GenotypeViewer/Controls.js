@@ -30,7 +30,7 @@ define(["DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
                 ctx.font = "bold " + 14 + "px sans-serif";
                 ctx.strokeStyle = DQX.getRGB(255,255,255);
                 ctx.fillStyle = DQX.getRGB(0,0,0);
-                var text = data.snps.length + DQX.pluralise('snp', data.snps.length);
+                var text = (view.end_snp - view.start_snp) + DQX.pluralise('snp', (view.end_snp - view.start_snp));
                 ctx.strokeText(text, 5, 5);
                 ctx.fillText(text, 5, 5);
                 for (var key in that.buttons) {
