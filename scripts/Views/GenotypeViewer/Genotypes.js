@@ -13,18 +13,20 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         var width = that.bounding_box.r - that.bounding_box.l;
         var snps = data.snps;
         var snps_length = snps.length;
-
         //Genotype squares
           if (snp_width > 1) {
             data.samples.forEach(function (sample, s) {
+              var r = data.snp_cache.genotypes[view.chrom][s].r;
+              var g = data.snp_cache.genotypes[view.chrom][s].g;
+              var b = data.snp_cache.genotypes[view.chrom][s].b;
+
               for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
-                snp = snps[i];
-                if (snp) {
-                  ctx.fillStyle = DQX.getRGB(snp.genotypes[s].pixel);
+                //if (snp) {
+                  ctx.fillStyle = DQX.getRGB(r[i], g[i], b[i]);
                   ctx.fillRect(x_scale(i)-(snp_width*0.001), sample.vert + y_off, snp_width+(snp_width*1.002), row_height);
                   //var height = Math.min(row_height,row_height*((snp.ref+snp.alt)/100))
                   //ctx.fillRect(x_scale(snp.snp_index), sample.vert + y_off + (row_height-height)/2, snp_width, height);
-                }
+                //}
               }
             });
           }

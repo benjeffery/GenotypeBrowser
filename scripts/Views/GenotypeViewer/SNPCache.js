@@ -1,6 +1,6 @@
 define(["lodash", "d3", "MetaData"],
   function (_, d3, MetaData) {
-    return function IntervalCache(provider, update_callback) {
+    return function IntervalCache(provider, update_callback, samples) {
 
       var UNFETCHED = 0;
       var FETCHING = 1;
@@ -10,6 +10,7 @@ define(["lodash", "d3", "MetaData"],
       var that = {};
       that.provider = provider;
       that.update_callback = update_callback;
+      that.samples = samples;
 
       that.snp_positions = {};
       that.snps = {};
@@ -61,9 +62,30 @@ define(["lodash", "d3", "MetaData"],
         }
         if (data) {
           that.snps[chrom] || (that.snps[chrom] = []);
+          that.genotypes[chrom] || (that.genotypes[chrom] = []);
+          var genotypes = that.genotypes[chrom];
           that.fetch_state[chrom][chunk] = FETCHED;
+          _(that.samples).forEach(function (sample,i) {
+            genotypes[i] || (genotypes[i] = {});
+            genotypes[i].alt || (genotypes[i].alt = new Uint8Array(that.snp_positions[chrom].length));
+            genotypes[i].ref || (genotypes[i].ref = new Uint8Array(that.snp_positions[chrom].length));
+            genotypes[i].r || (genotypes[i].r = new Uint8Array(that.snp_positions[chrom].length));
+            genotypes[i].g || (genotypes[i].g = new Uint8Array(that.snp_positions[chrom].length));
+            genotypes[i].b || (genotypes[i].b = new Uint8Array(that.snp_positions[chrom].length));
+            genotypes[i].gt || (genotypes[i].gt = new Uint8Array(that.snp_positions[chrom].length));
+          });
           _(data).forEach(function (snp, i) {
-            that.snps[chrom][i + start_index] = data[i];
+            var k = i + start_index;
+            that.snps[chrom][k] = data[i];
+            _(that.samples).forEach(function (sample,j) {
+              genotypes[j].alt[k] = Math.min(255,snp.genotypes[j].alt);
+              genotypes[j].ref[k] = Math.min(255,snp.genotypes[j].ref);
+              genotypes[j].gt[k] = Math.min(255,snp.genotypes[j].gt);
+              genotypes[j].r[k] = snp.genotypes[j].pixel[0];
+              genotypes[j].g[k] = snp.genotypes[j].pixel[1];
+              genotypes[j].b[k] = snp.genotypes[j].pixel[2];
+            });
+            snp.genotypes = undefined;
           });
         } else {
           that.fetch_state[chrom][chunk] = UNFETCHED;
@@ -84,10 +106,10 @@ define(["lodash", "d3", "MetaData"],
           var start = chunk.chunk * CHUNK_SIZE;
           var end = Math.min(that.snp_positions[chunk.chrom].length-1, (chunk.chunk + 1) * CHUNK_SIZE);
           console.log('fetch ' + start +':'+ end);
-        //  that.provider(chunk.chrom,
-          //              that.snp_positions[chunk.chrom][start],
-            //            that.snp_positions[chunk.chrom][end],
-              //          that._insert_received_data);
+          that.provider(chunk.chrom,
+                        that.snp_positions[chunk.chrom][start],
+                        that.snp_positions[chunk.chrom][end],
+                        that._insert_received_data);
           that.current_provider_requests += 1;
         }
         if (that.provider_queue.length > 0) {

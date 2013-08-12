@@ -133,7 +133,7 @@
         var provider = function(chrom, start, end, callback) {
           that.snpProvider(that.view.chrom, start, end, sample_set, callback)
         };
-        that.data.snp_cache = SNPCache(provider, that.newData);
+        that.data.snp_cache = SNPCache(provider, that.newData, sample_set);
         sample_set.forEach(function (sample) {
           sample.genotypes_canvas = document.createElement('canvas');
           sample.genotypes_canvas.height = 1;
@@ -326,7 +326,7 @@
               var data = image_data.data;
               var p = 0;
               //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
-              for(var j=view.start; j<num_snps; j+= snps_per_pixel) {
+              for(var j=view.start_snp; j<num_snps; j+= snps_per_pixel) {
 //                var genotype = snps[j].genotypes[i];
 //                var pixel = genotype.pixel;
 //                data[4*p] = pixel[0];
