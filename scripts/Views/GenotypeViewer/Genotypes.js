@@ -6,31 +6,32 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
 
       that._draw = function (ctx, view, data) {
         var x_scale = view.snp_scale;
+        var snp, end, i;
         var snp_width = x_scale(1) - x_scale(0);
         var y_off = view.scroll_pos;
         var row_height = Math.ceil(view.row_height);
-        var width = that.bounding_box.r - that.bounding_box.l;
         var snps = data.snps;
-        var snps_length = snps.length;
-
         //Genotype squares
-        if (snps.length > 0)
-          if (snp_width > 1) {
-            data.samples.forEach(function (sample, i) {
-              for(var j = 0; j < snps_length; j++) {
-                var snp = snps[j];
-                ctx.fillStyle = DQX.getRGB(snp.genotypes[i].pixel);
-                ctx.fillRect(x_scale(snp.num)-(snp_width*0.001), sample.vert + y_off, snp_width+(snp_width*1.002), row_height);
-                //var height = Math.min(row_height,row_height*((snp.ref+snp.alt)/100))
-                //ctx.fillRect(x_scale(snp.snp_index), sample.vert + y_off + (row_height-height)/2, snp_width, height);
+          if (snp_width > 3) {
+            data.samples.forEach(function (sample, s) {
+              var r = data.snp_cache.genotypes[view.chrom][s].r;
+              var g = data.snp_cache.genotypes[view.chrom][s].g;
+              var b = data.snp_cache.genotypes[view.chrom][s].b;
+              for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
+                //if (snp) {
+                  ctx.fillStyle = DQX.getRGB(r[i], g[i], b[i]);
+                  ctx.fillRect(x_scale(i)-(snp_width*0.001), sample.vert + y_off, snp_width+(snp_width*1.002), row_height);
+                  //var height = Math.min(row_height,row_height*((snp.ref+snp.alt)/100))
+                  //ctx.fillRect(x_scale(snp.snp_index), sample.vert + y_off + (row_height-height)/2, snp_width, height);
+                //}
               }
             });
           }
           else {
-            var pixel_width = view.snp_scale(snps.length) - view.snp_scale(0);
-            var x_offset = view.snp_scale(snps[0].num);
+            var width = x_scale(view.cache_end_snp) - x_scale(view.cache_start_snp);
+            var x_offset =  x_scale(view.cache_start_snp);
             data.samples.forEach(function (sample, i) {
-              ctx.drawImage(sample.genotypes_canvas,x_offset,sample.vert + y_off,pixel_width,row_height);
+              ctx.drawImage(sample.genotypes_canvas,x_offset,sample.vert + y_off, width, row_height);
             });
           }
 
@@ -46,35 +47,35 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           ctx.textAlign = 'right';
           ctx.strokeStyle = DQX.getRGB(0, 0, 128, alpha);
           ctx.fillStyle = DQX.getRGB(255, 255, 255, alpha);
-          var min_snp = x_scale.invert(-300);
-          var max_snp = x_scale.invert(that.width() + 200);
-          data.samples.forEach(function (sample, i) {
-            snps.forEach(function (snp, j) {
-              if (j > min_snp && j < max_snp) {
-                var genotype = snp.genotypes[i];
-                if (genotype.ref) {
-                  var x = x_scale(snp.num) + (snp_width / 2) - 5;
-                  var y = sample.vert + y_off + (row_height / 2);
-                  ctx.strokeText(genotype.ref, x, y);
-                  ctx.fillText(genotype.ref, x, y);
-                }
+          data.samples.forEach(function (sample, s) {
+            var ref = data.snp_cache.genotypes[view.chrom][s].ref;
+            for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
+              snp = snps[i];
+              if (snp) {
+                  if (ref[i]) {
+                    var x = x_scale(i) + (snp_width / 2) - 5;
+                    var y = sample.vert + y_off + (row_height / 2);
+                    ctx.strokeText(ref[i], x, y);
+                    ctx.fillText(ref[i], x, y);
+                  }
               }
-            });
+            }
           });
           ctx.strokeStyle = DQX.getRGB(128, 0, 0, alpha);
           ctx.fillStyle = DQX.getRGB(255, 255, 255, alpha);
-          data.samples.forEach(function (sample, i) {
-              snps.forEach(function (snp, j) {
-                if (j > min_snp && j < max_snp) {
-                  var genotype = snp.genotypes[i];
-                  if (genotype.alt) {
-                    var x = x_scale(snp.num) + (snp_width / 2) + 25;
+          data.samples.forEach(function (sample, s) {
+            var alt = data.snp_cache.genotypes[view.chrom][s].alt;
+            for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
+              snp = snps[i];
+              if (snp) {
+                  if (alt[i]) {
+                    var x = x_scale(i) + (snp_width / 2) + 25;
                     var y = sample.vert + y_off + (row_height / 2);
-                    ctx.strokeText(genotype.alt, x, y);
-                    ctx.fillText(genotype.alt, x, y);
+                    ctx.strokeText(alt[i], x, y);
+                    ctx.fillText(alt[i], x, y);
                   }
-                }
-              });
+              }
+            }
           });
         }
       };
