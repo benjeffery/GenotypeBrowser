@@ -11,12 +11,14 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         var y_off = view.scroll_pos;
         var row_height = Math.ceil(view.row_height);
         var snps = data.snps;
+        var genotypes = data.snp_cache.genotypes[view.chrom]
+        if (!genotypes) return;
         //Genotype squares
           if (snp_width > 3) {
             data.samples.forEach(function (sample, s) {
-              var r = data.snp_cache.genotypes[view.chrom][s].r;
-              var g = data.snp_cache.genotypes[view.chrom][s].g;
-              var b = data.snp_cache.genotypes[view.chrom][s].b;
+              var r = genotypes[s].r;
+              var g = genotypes[s].g;
+              var b = genotypes[s].b;
               for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
                 //if (snp) {
                   ctx.fillStyle = DQX.getRGB(r[i], g[i], b[i]);

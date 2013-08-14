@@ -141,12 +141,15 @@
 
       that.sortSamples = function () {
         var sample_set = that.data.samples;
+        var genotypes = that.data.snp_cache.genotypes[that.view.chrom];
         that.data.samples.forEach(function (sample, i) {
           sample.selected_haplotype = '';
-          that.data.snps.forEach(function (snp) {
-            if (snp.selected)
-              sample.selected_haplotype += snp.genotypes[i].gt;
-          });
+          if (genotypes) {
+            that.data.snps.forEach(function (snp, j) {
+              if (snp.selected)
+                sample.selected_haplotype += genotypes[i].gt[j];
+            });
+          }
         });
         if (that.cluster) {
 //                    var genotypes = [];
@@ -183,7 +186,7 @@
               }
             },
           ]
-          that.sample_leaf_sort = DQX.comp_attr('selected_haplotype', d3.descending);
+          that.sample_leaf_sort = function(a,b) {return d3.descending(a.selected_haplotype+ a.ID, b.selected_haplotype+ b.ID);};
         } else {
           that.sample_heirachy = [
             {
@@ -228,7 +231,7 @@
           nest.depth = depth;
           if (!nest.vert)
             nest.vert = vert;
-          var t = new tween.Tween(nest, ['vert'])
+          var t = new tween.Tween(nest)
             .to({vert: vert}, 2000)
             .easing(tween.Easing.Sinusoidal.InOut)
             .start();
@@ -323,7 +326,7 @@
           that.data.samples.forEach(function(sample, s) {
             //We want a canvas that is the next multiple of the number of snps
             sample.genotypes_canvas.width = width;
-            if (num_snps > 0) {
+            if (num_snps > 0 && genotypes) {
               var ctx = sample.genotypes_canvas.getContext("2d");
               var image_data = ctx.createImageData(width, 1);
               var data = image_data.data;
@@ -427,7 +430,7 @@
       that.row_header_width = 150;
       that.col_header_height = 100;
       that.row_height = 15;
-      that.compressed_row_height = 5;
+      that.compressed_row_height = 2;
       that.cluster = 0;
 
       //Bounding boxes set on resize

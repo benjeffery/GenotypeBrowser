@@ -42,7 +42,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
               ctx.fill();
             }
           }
-        }
+        }     else
         //Text
         alpha = tween.manual(snp_width, 7, 10);
         if (alpha > 0) {

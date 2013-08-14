@@ -15,6 +15,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         var scale = view.genome_scale;
         var snp_scale = view.snp_scale;
         var snps = data.snps;
+        var snps_pos = data.snp_cache.snp_positions[view.chrom];
         var snp, i, end;
         var snps_length = view.end_snp - view.start_snp;
         var snp_width = that.width() / snps_length;
