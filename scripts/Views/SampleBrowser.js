@@ -83,7 +83,7 @@
                     });
                     snp.col.r /= len;
                     snp.col.g /= len;
-                    snp.col.b /= len;
+                    snp.col.b /= len;ry_data['chrom']
                     snp.rgb = snp.col;
                     snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
                   });
@@ -100,6 +100,14 @@
           }
         };
         that.snpProvider = function (chrom, start, end, samples, callback) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', serverUrl + "?datatype=custom&respmodule=vcf_server&respid=chromosome_index&chrom=MAL14", true);
+          xhr.responseType = 'arraybuffer';
+          xhr.onload = function(e) {
+            var a = new Uint32Array(this.response);
+            console.log(a);
+          };
+          xhr.send();
           var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableSNPInfo);
           //fetcher.setMaxResultCount(1001);
           fetcher.addColumn('snpid', 'ST');
