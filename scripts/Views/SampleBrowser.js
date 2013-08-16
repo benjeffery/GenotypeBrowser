@@ -49,65 +49,32 @@
           );
         };
 
-        that.getGenotypes = function (chrom, start, end, snps, samples, callback) {
-          if (samples.length > 0 && snps.length > 0) {
-            //DQX.setProcessing('Fetching...');
-            var sample_ids = samples.map(DQX.attr('ID'));
-            that.fetcher.fetch(chrom, start, end, sample_ids, function (data) {
-                if (data) {
-                  //console.time("Insert SNPs");
-                  snps.forEach(function (snp, i) {
-                    snp.genotypes = [];
-                  });
-                  sample_ids.forEach(function (sample_id) {
-                    var sample_data = data.sample_data[sample_id];
-                    snps.forEach(function (snp, i) {
-                      snp.genotypes.push({
-                        alt: sample_data.CovA[i],
-                        ref: sample_data.CovD[i],
-                        gt: sample_data.CovA[i] >= sample_data.CovD[i] ? (sample_data.CovA[i] >= 5 ? 1 : 0) : 0
-                      });
-                    });
-                  });
-                  //Set colours for the snps
-                  var len = samples.length;
-                  snps.forEach(function (snp, i) {
-                    snp.col = {r: 0, g: 0, b: 0};
-                    snp.genotypes.forEach(function (genotype, i) {
-                      var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
-                      genotype.pixel = [col.r, col.g, col.b];
-                      var col_snp = snp.col;
-                      col_snp.r += col.r;
-                      col_snp.g += col.g;
-                      col_snp.b += col.b;
-                    });
-                    snp.col.r /= len;
-                    snp.col.g /= len;
-                    snp.col.b /= len;ry_data['chrom']
-                    snp.rgb = snp.col;
-                    snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
-                  });
-                  callback(chrom, start, end, snps);
-                  //console.timeEnd("Insert SNPs");
-                } else {
-                  //We had a error getting the genotypes, returning null will mean this gets retried next time.
-                  callback(chrom, start, end, null);
-                }
-              //  DQX.stopProcessing();
-              });
-          } else {
-            callback(chrom, start, end, []);
-          }
-        };
-        that.snpProvider = function (chrom, start, end, samples, callback) {
+        that.genotypeProvider = function (chrom, start, end, samples, callback) {
+//          var xhr = new XMLHttpRequest();
+//          xhr.open('GET', serverUrl + "?datatype=custom&respmodule=vcf_server&respid=chromosome_index&chrom=MAL14", true);
+//          xhr.responseType = 'arraybuffer';
+//          xhr.onload = function(e) {
+//            var a = new Uint32Array(this.response);
+//            console.log(a);
+//          };
+//          xhr.send();
           var xhr = new XMLHttpRequest();
-          xhr.open('GET', serverUrl + "?datatype=custom&respmodule=vcf_server&respid=chromosome_index&chrom=MAL14", true);
+          //var sample_ids = samples.map(DQX.attr('ID'));
+          var sample_ids = ['PF0004-C','PF0007-C','PF0009-C','PF0010-C','PF0011-C','PF0016-C','PF0021-C','PF0022-C','PF0024-C','PF0025-C','PF0026-C','PF0028-C','PF0029-C','PF0031-C','PF0032-C','PF0035-C','PF0036-C','PF0038-C','PF0039-C','PF0040-C','PF0042-C','PF0043-C','PF0044-C','PF0045-C','PF0046-C','PF0047-C','PF0049-C','PF0050-C','PF0051-C','PF0054-C','PF0055-C','PF0057-C','PF0058-C','PF0062-C','PF0063-C','PF0069-C','PF0073-C','PF0074-C','PF0077-C','PF0080-C','PF0081-C','PF0084-C','PF0089-C','PF0090-C','PF0096-C','PF0097-C','PF0098-C','PF0099-C','PF0100-C','PF0101-C','PF0102-C','PF0103-C','PF0104-C','PF0107-C','PF0108-C','PF0109-C','PF0112-C','PF0113-C','PF0114-C','PF0115-C','PF0116-C','PF0117-C','PF0121-C','PF0122-C','PF0123-C','PF0125-C','PF0127-C','PF0130-C','PF0131-C','PF0132-C','PF0133-C'];
+          var seqids = '';
+          for (var i = 0; i < sample_ids.length-1; i++) {
+            seqids += sample_ids[i];
+            seqids += '~';
+          }
+          seqids += sample_ids[sample_ids.length-1];
+          xhr.open('GET', serverUrl + "?datatype=custom&respmodule=vcf_server&respid=genotypes&chrom="+chrom+"&start="+start+"&end="+end+"&samples="+seqids, true);
           xhr.responseType = 'arraybuffer';
           xhr.onload = function(e) {
-            var a = new Uint32Array(this.response);
-            console.log(a);
+            callback(this.response);
           };
           xhr.send();
+        };
+        that.snpProvider = function (chrom, start, end, callback) {
           var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableSNPInfo);
           //fetcher.setMaxResultCount(1001);
           fetcher.addColumn('snpid', 'ST');
@@ -138,9 +105,9 @@
                 )
               }
          //     DQX.stopProcessing();
-              that.getGenotypes(chrom, start, end, snps, samples, callback);
+              callback(snps);
             },
-            DQX.createMessageFailFunction()
+            callback
           );
         };
 
@@ -178,7 +145,7 @@
 
           this.controlPanel.render();
 
-          var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, that.snpProvider, that.annotationProvider);
+          var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, that.snpProvider, that.genotypeProvider, that.annotationProvider);
           compress.setOnChanged(function () {
             gv.modify_compress(compress.getValue())
           });

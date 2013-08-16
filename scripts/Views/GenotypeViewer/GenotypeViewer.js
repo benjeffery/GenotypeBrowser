@@ -8,8 +8,9 @@
             SVG,
             FramePanel, MetaData, ColumnHeader,
             RowHeader, GeneMap, Genotypes, TouchEvents, Controls, Scale, IntervalCache, SNPCache) {
-    return function GenotypeViewer(frame, snp_provider, annotation_provider) {
+    return function GenotypeViewer(frame, snp_provider, genotype_provider, annotation_provider) {
       var that = {};
+      that.genotypeProvider = genotype_provider;
       that.snpProvider = snp_provider;
       that.annotationProvider = annotation_provider;
 
@@ -128,10 +129,7 @@
       };
       that.setSamples = function (sample_set) {
         that.data.samples = sample_set;
-        var provider = function(chrom, start, end, callback) {
-          that.snpProvider(that.view.chrom, start, end, sample_set, callback)
-        };
-        that.data.snp_cache = SNPCache(provider, that.newData, sample_set);
+        that.data.snp_cache = SNPCache(that.snpProvider, that.genotypeProvider, that.newData, sample_set);
         sample_set.forEach(function (sample) {
           sample.genotypes_canvas = document.createElement('canvas');
           sample.genotypes_canvas.height = 1;

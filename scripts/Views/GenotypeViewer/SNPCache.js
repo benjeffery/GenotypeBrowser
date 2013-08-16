@@ -1,14 +1,36 @@
 define(["lodash", "d3", "MetaData"],
   function (_, d3, MetaData) {
-    return function IntervalCache(provider, update_callback, samples) {
+    return function IntervalCache(snp_provider, genotype_provider, update_callback, samples) {
+
+
+//      //Set colours for the snps
+//      var len = samples.length;
+//      snps.forEach(function (snp, i) {
+//        snp.col = {r: 0, g: 0, b: 0};
+//        snp.genotypes.forEach(function (genotype, i) {
+//          var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
+//          genotype.pixel = [col.r, col.g, col.b];
+//          var col_snp = snp.col;
+//          col_snp.r += col.r;
+//          col_snp.g += col.g;
+//          col_snp.b += col.b;
+//        });
+//        snp.col.r /= len;
+//        snp.col.g /= len;
+//        snp.col.b /= len;
+//        snp.rgb = snp.col;
+//        snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
+//
 
       var UNFETCHED = 0;
       var FETCHING = 1;
-      var FETCHED = 2;
-      var CHUNK_SIZE = 2000;
+      var FETCHED_ONE = 2;
+      var FETCHED_BOTH = 3;
+      var CHUNK_SIZE = 1000;
 
       var that = {};
-      that.provider = provider;
+      that.snp_provider = snp_provider;
+      that.genotype_provider = genotype_provider;
       that.update_callback = update_callback;
       that.samples = samples;
 
@@ -52,42 +74,50 @@ define(["lodash", "d3", "MetaData"],
           return _(that.snp_positions[chrom]).last();
       };
 
-      that._insert_received_data = function (chrom, start, end, data) {
-        that.current_provider_requests -= 1;
-        var start_index = _(that.snp_positions[chrom]).indexOf(start);
-        var chunk = start_index / CHUNK_SIZE;
-        if (that.fetch_state[chrom][chunk] !== FETCHING) {
-          console.log("Got data for chunk that was not fetching", start, end);
+      that._insert_received_data = function (type, chunk, samples, data) {
+        var chrom = chunk.chrom;
+        chunk = chunk.chunk;
+        var start_index = chunk * CHUNK_SIZE;
+        if (that.fetch_state[chrom][chunk] !== FETCHING && that.fetch_state[chrom][chunk] !== FETCHED_ONE ) {
+          console.log("Got data for chunk that was not fetching", chunk);
           return;
         }
         if (data) {
-          that.snps[chrom] || (that.snps[chrom] = []);
-          that.genotypes[chrom] || (that.genotypes[chrom] = []);
-          var genotypes = that.genotypes[chrom];
-          that.fetch_state[chrom][chunk] = FETCHED;
-          _(that.samples).forEach(function (sample,i) {
-            genotypes[i] || (genotypes[i] = {});
-            genotypes[i].alt || (genotypes[i].alt = new Uint8Array(that.snp_positions[chrom].length));
-            genotypes[i].ref || (genotypes[i].ref = new Uint8Array(that.snp_positions[chrom].length));
-            genotypes[i].r || (genotypes[i].r = new Uint8Array(that.snp_positions[chrom].length));
-            genotypes[i].g || (genotypes[i].g = new Uint8Array(that.snp_positions[chrom].length));
-            genotypes[i].b || (genotypes[i].b = new Uint8Array(that.snp_positions[chrom].length));
-            genotypes[i].gt || (genotypes[i].gt = new Uint8Array(that.snp_positions[chrom].length));
-          });
-          _(data).forEach(function (snp, i) {
-            var k = i + start_index;
-            that.snps[chrom][k] = snp;
-            _(that.samples).forEach(function (sample,j) {
-              genotypes[j].alt[k] = Math.min(255,snp.genotypes[j].alt);
-              genotypes[j].ref[k] = Math.min(255,snp.genotypes[j].ref);
-              genotypes[j].gt[k] = Math.min(255,snp.genotypes[j].gt);
-              genotypes[j].r[k] = snp.genotypes[j].pixel[0];
-              genotypes[j].g[k] = snp.genotypes[j].pixel[1];
-              genotypes[j].b[k] = snp.genotypes[j].pixel[2];
+          if (type == 'genotype') {
+            that.genotypes[chrom] || (that.genotypes[chrom] = []);
+            var genotypes = that.genotypes[chrom];
+            that.fetch_state[chrom][chunk] += 1;
+            _(that.samples).forEach(function (sample,i) {
+              genotypes[i] || (genotypes[i] = {});
+              genotypes[i].alt || (genotypes[i].alt = new Uint8Array(that.snp_positions[chrom].length));
+              genotypes[i].ref || (genotypes[i].ref = new Uint8Array(that.snp_positions[chrom].length));
+              genotypes[i].r || (genotypes[i].r = new Uint8Array(that.snp_positions[chrom].length));
+              genotypes[i].g || (genotypes[i].g = new Uint8Array(that.snp_positions[chrom].length));
+              genotypes[i].b || (genotypes[i].b = new Uint8Array(that.snp_positions[chrom].length));
+              genotypes[i].gt || (genotypes[i].gt = new Uint8Array(that.snp_positions[chrom].length));
             });
-            snp.genotypes = undefined;
-          });
+//            _(data).forEach(function (snp, i) {
+//              var k = i + start_index;
+//              _(that.samples).forEach(function (sample,j) {
+//                genotypes[j].alt[k] = Math.min(255,snp.genotypes[j].alt);
+//                genotypes[j].ref[k] = Math.min(255,snp.genotypes[j].ref);
+//                genotypes[j].gt[k] = Math.min(255,snp.genotypes[j].gt);
+//                genotypes[j].r[k] = snp.genotypes[j].pixel[0];
+//                genotypes[j].g[k] = snp.genotypes[j].pixel[1];
+//                genotypes[j].b[k] = snp.genotypes[j].pixel[2];
+//              });
+//            });
+            console.log(data);
+          } else {
+            //SNP Data
+            that.snps[chrom] || (that.snps[chrom] = []);
+            _(data).forEach(function (snp, i) {
+              var k = i + start_index;
+              that.snps[chrom][k] = snp;
+            });
+          }
         } else {
+          console.log("no data")
           that.fetch_state[chrom][chunk] = UNFETCHED;
         }
         return that.update_callback();
@@ -101,16 +131,29 @@ define(["lodash", "d3", "MetaData"],
       };
 
       that._process_provider_queue = function () {
-        if (that.current_provider_requests < 2 && that.provider_queue.length > 0) {
+        if (that.current_provider_requests < 1 && that.provider_queue.length > 0) {
           var chunk = that.provider_queue.pop();
           var start = chunk.chunk * CHUNK_SIZE;
           var end = Math.min(that.snp_positions[chunk.chrom].length-1, (chunk.chunk + 1) * CHUNK_SIZE);
           console.log('fetch ' + start +':'+ end);
-          that.provider(chunk.chrom,
-                        that.snp_positions[chunk.chrom][start],
-                        that.snp_positions[chunk.chrom][end],
-                        that._insert_received_data);
-          that.current_provider_requests += 1;
+          that.genotype_provider(chunk.chrom,
+            that.snp_positions[chunk.chrom][start],
+            that.snp_positions[chunk.chrom][end],
+            that.samples,
+            function (data) {
+              that.current_provider_requests -= 1;
+              //Clone as otherwise these can change
+              that._insert_received_data('genotype', _.clone(chunk), _.clone(that.samples), data);
+            });
+          that.snp_provider(chunk.chrom,
+            that.snp_positions[chunk.chrom][start],
+            that.snp_positions[chunk.chrom][end],
+            function (data) {
+              that.current_provider_requests -= 1;
+              that._insert_received_data('snp', _.clone(chunk), null, data);
+            });
+
+          that.current_provider_requests += 2;
         }
         if (that.provider_queue.length > 0) {
           setTimeout(that._process_provider_queue, 100);
