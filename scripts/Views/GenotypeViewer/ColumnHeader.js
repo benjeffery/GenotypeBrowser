@@ -7,6 +7,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
       that._draw = function (ctx, view, data) {
         var scale = view.snp_scale;
         var snp_width = scale(1) - scale(0);
+        var snps = data.snp_cache.snps;
         //Background
         var g = ctx.createLinearGradient(0, 0, 0, that.height());
         g.addColorStop(0, "rgba(255,255,255,0.85)");
@@ -20,14 +21,14 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         if (alpha > 0) {
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, 0.5 * alpha);
           for (var i = view.start_snp, end = view.end_snp; i < end; ++i) {
-            var snp = data.snps[i];
+            var snp = snps[i];
             if (!snp) continue;
             ctx.beginPath();
             ctx.moveTo(scale(i), 20);
             ctx.bezierCurveTo(scale(i), 10, scale(i + 0.5), 10, scale(i + 0.5), 0);
             ctx.bezierCurveTo(scale(i + 0.5), 10, scale(i + 1), 10, scale(i + 1), 20);
             ctx.closePath();
-            ctx.fillStyle = DQX.getRGB(snp.rgb.r, snp.rgb.g, snp.rgb.b, alpha);
+            ctx.fillStyle = "#000"//TODODQX.getRGB(snp.rgb.r, snp.rgb.g, snp.rgb.b, alpha);
             ctx.lineWidth = snp.selected ? 2 : 1;
             ctx.fill();
             ctx.stroke();
@@ -61,7 +62,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, alpha);
           ctx.textBaseline = 'middle';
           for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
-            snp = data.snps[i];
+            snp = snps[i];
             if (!snp) continue;
             ctx.save();
             ctx.translate(scale(i + 0.5), 70);
@@ -93,13 +94,13 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
         if (alpha > 0) {
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, alpha);
           for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
-            snp = data.snps[i];
+            snp = snps[i];
             if (!snp) continue;
             ctx.moveTo(scale(i), that.height() + (view.genotypes.bounding_box.b - view.genotypes.bounding_box.t));
             ctx.lineTo(scale(i), 20);
           }
-          ctx.moveTo(scale(data.snps.length), that.height() + (view.genotypes.bounding_box.b - view.genotypes.bounding_box.t));
-          ctx.lineTo(scale(data.snps.length), 20);
+          ctx.moveTo(scale(snps.length), that.height() + (view.genotypes.bounding_box.b - view.genotypes.bounding_box.t));
+          ctx.lineTo(scale(snps.length), 20);
           ctx.stroke();
         }
       };

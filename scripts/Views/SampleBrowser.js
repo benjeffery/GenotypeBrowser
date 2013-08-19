@@ -9,7 +9,6 @@
           'browser',
           'Genotype Browser'
         );
-        that.fetcher = new DataFetcherSnp.Fetcher(serverUrl, MetaData.genotypeDataSource);
         that.annotation_fetcher = new DataFetcherAnnotation.Fetcher({
           serverURL: serverUrl,
           database: MetaData.database,
@@ -49,15 +48,25 @@
           );
         };
 
+        that.snpIndexProvider = function (chrom, callback) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', serverUrl + "?datatype=custom&respmodule=vcf_server&respid=chromosome_index&chrom="+chrom, true);
+          xhr.responseType = 'arraybuffer';
+          xhr.onreadystatechange = function handler() {
+            if(this.readyState == this.DONE) {
+              if(this.status == 200 && this.response != null) {
+                var positions = new Uint32Array(this.response);
+                callback(positions);
+                return;
+              }
+              //error
+              callback(null);
+            }
+          };
+          xhr.send();
+        };
+
         that.genotypeProvider = function (chrom, start, end, samples, callback) {
-//          var xhr = new XMLHttpRequest();
-//          xhr.open('GET', serverUrl + "?datatype=custom&respmodule=vcf_server&respid=chromosome_index&chrom=MAL14", true);
-//          xhr.responseType = 'arraybuffer';
-//          xhr.onload = function(e) {
-//            var a = new Uint32Array(this.response);
-//            console.log(a);
-//          };
-//          xhr.send();
           var xhr = new XMLHttpRequest();
           //var sample_ids = samples.map(DQX.attr('ID'));
           var sample_ids = ['PF0004-C','PF0007-C','PF0009-C','PF0010-C','PF0011-C','PF0016-C','PF0021-C','PF0022-C','PF0024-C','PF0025-C','PF0026-C','PF0028-C','PF0029-C','PF0031-C','PF0032-C','PF0035-C','PF0036-C','PF0038-C','PF0039-C','PF0040-C','PF0042-C','PF0043-C','PF0044-C','PF0045-C','PF0046-C','PF0047-C','PF0049-C','PF0050-C','PF0051-C','PF0054-C','PF0055-C','PF0057-C','PF0058-C','PF0062-C','PF0063-C','PF0069-C','PF0073-C','PF0074-C','PF0077-C','PF0080-C','PF0081-C','PF0084-C','PF0089-C','PF0090-C','PF0096-C','PF0097-C','PF0098-C','PF0099-C','PF0100-C','PF0101-C','PF0102-C','PF0103-C','PF0104-C','PF0107-C','PF0108-C','PF0109-C','PF0112-C','PF0113-C','PF0114-C','PF0115-C','PF0116-C','PF0117-C','PF0121-C','PF0122-C','PF0123-C','PF0125-C','PF0127-C','PF0130-C','PF0131-C','PF0132-C','PF0133-C'];
@@ -69,11 +78,19 @@
           seqids += sample_ids[sample_ids.length-1];
           xhr.open('GET', serverUrl + "?datatype=custom&respmodule=vcf_server&respid=genotypes&chrom="+chrom+"&start="+start+"&end="+end+"&samples="+seqids, true);
           xhr.responseType = 'arraybuffer';
-          xhr.onload = function(e) {
-            callback(this.response);
+          xhr.onreadystatechange = function handler() {
+            if(this.readyState == this.DONE) {
+              if(this.status == 200 && this.response != null) {
+                callback(this.response);
+                return;
+              }
+              //error
+              callback(null);
+            }
           };
           xhr.send();
         };
+
         that.snpProvider = function (chrom, start, end, callback) {
           var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableSNPInfo);
           //fetcher.setMaxResultCount(1001);
@@ -145,7 +162,11 @@
 
           this.controlPanel.render();
 
-          var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, that.snpProvider, that.genotypeProvider, that.annotationProvider);
+          var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, {
+            snp:that.snpProvider,
+            genotype:that.genotypeProvider,
+            position:that.snpIndexProvider,
+            annotation:that.annotationProvider});
           compress.setOnChanged(function () {
             gv.modify_compress(compress.getValue())
           });
