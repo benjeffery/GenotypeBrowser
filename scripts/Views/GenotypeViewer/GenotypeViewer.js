@@ -15,7 +15,11 @@
       that.rescaleGenomic = function (target) {
         var left = that.data.snp_cache.posToIndex(target.left);
         var right = that.data.snp_cache.posToIndex(target.right);
-        that.view.snp_scale.tweenTo({left: left, right: right});
+        if (_.isEqual(that.view.snp_scale.domain(), [0,0])) {
+          that.view.snp_scale.domain([left, right]);
+        } else {
+          that.view.snp_scale.tweenTo({left: left, right: right});
+        }
       };
       //Rescale the genome based on a range of SNPs
       that.rescaleSNPic = function (target) {
@@ -140,7 +144,7 @@
         that.data.samples.forEach(function (sample, i) {
           sample.selected_haplotype = '';
           if (genotypes) {
-            that.data.snps.forEach(function (snp, j) {
+            that.data.snp_cache.snps.forEach(function (snp, j) {
               if (snp.selected)
                 sample.selected_haplotype += genotypes[i].gt[j];
             });
@@ -274,12 +278,14 @@
         that.last_view_change = 'genome';
       };
 
-      that.newData = function() {
+      that.newData = _.throttle(function() {
         that.updateSNPs(true);
-      };
+      },1000);
+
       that.newAnnotations = function() {
         var genome_scale = that.view.genome_scale.domain();
         that.data.annotations = that.data.annotation_cache.get_by_pos(that.view.chrom, Math.floor(genome_scale[0]-25000), Math.ceil(genome_scale[1]+25000));
+        that.needUpdate = 'Annots';
       };
 
       //Initialise the viewer

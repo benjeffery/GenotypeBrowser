@@ -92,6 +92,11 @@
         };
 
         that.snpProvider = function (chrom, start, end, callback) {
+          var a = [];
+          for (var i = 0; i < 2000; i++)
+            a.push({})
+          callback(a);
+          return;
           var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableSNPInfo);
           //fetcher.setMaxResultCount(1001);
           fetcher.addColumn('snpid', 'ST');

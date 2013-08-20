@@ -26,7 +26,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
       var FETCHING = 1;
       var FETCHED_ONE = 2;
       var FETCHED_BOTH = 3;
-      var CHUNK_SIZE = 1000;
+      var CHUNK_SIZE = 2000;
 
       var that = {};
       that.snp_provider = providers.snp;
@@ -101,6 +101,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         //Convert to nearest chunk boundaries
         start = Math.floor(start / CHUNK_SIZE);
         end = Math.ceil(end / CHUNK_SIZE);
+        that.last_request = [start,end];
         var fetch_state = that.fetch_state;
         for (var i = start; i < end; ++i)
           if (!fetch_state[i] && i < fetch_state.length) {
@@ -151,8 +152,8 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
            var d = 0;
             _(that.samples).forEach(function (sample,j) {
               var sample_gt = genotypes[j];
-              for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
-                sample_gt.gt[i] = data[d];
+//              for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
+//                sample_gt.gt[i] = data[d];
               for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
                 sample_gt.ref[i] = data[d];
               for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
@@ -162,6 +163,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
                 sample_gt.r[i] = col.r;
                 sample_gt.g[i] = col.g;
                 sample_gt.b[i] = col.b;
+                sample_gt.gt[i] = sample_gt.alt[i] >= sample_gt.ref[i] ? (sample_gt.alt[i] >= 5 ? 1 : 0) : 0;
               }
             });
           } else {
