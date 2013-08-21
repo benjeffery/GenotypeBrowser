@@ -130,11 +130,11 @@
       };
       that.setSamples = function (sample_set) {
         that.data.samples = sample_set;
-        that.data.snp_cache.set_samples(sample_set);
         sample_set.forEach(function (sample) {
           sample.genotypes_canvas = document.createElement('canvas');
           sample.genotypes_canvas.height = 1;
         });
+        that.data.snp_cache.set_samples(sample_set);
         that.sortSamples();
       };
 

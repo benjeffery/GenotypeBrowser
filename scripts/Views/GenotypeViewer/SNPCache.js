@@ -41,7 +41,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
       that.snps = [];
       //Genotypes by chrom then sample then call type
       that.genotypes_by_chrom = {};
-      that.genotypes = {};
+      that.genotypes = undefined;
       //Fetch state by chrom
       that.fetch_state_by_chrom = {};
       that.fetch_state = [];
@@ -54,10 +54,11 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         //Clear out everything
         that.samples = samples;
         that.genotypes_by_chrom = {};
-        that.genotypes = {};
         that.fetch_state_by_chrom = {};
-        that.fetch_state = [];
         that.provider_queue = [];
+        //TODO Don't really need to wipe this
+        that.snp_positions_by_chrom = {};
+        that.set_chrom(that.chrom);
       };
 
       that.set_chrom = function(chrom) {
@@ -200,7 +201,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
           that.genotype_provider(chunk.chrom,
             that.snp_positions_by_chrom[chunk.chrom][start],
             that.snp_positions_by_chrom[chunk.chrom][end],
-            that.samples,
+            _.map(that.samples, DQX.attr('ID')),
             function (data) {
               that.current_provider_requests -= 1;
               //Clone as otherwise these can change

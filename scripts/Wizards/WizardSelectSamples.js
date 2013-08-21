@@ -1,5 +1,5 @@
-﻿define(["require", "DQX/Framework", "DQX/Controls", "DQX/Msg", "DQX/SQL", "DQX/DocEl", "DQX/Popup", "DQX/Wizard", "DQX/DataFetcher/DataFetchers"],
-    function (require, Framework, Controls, Msg, SQL, DocEl, Popup, Wizard, DataFetcher) {
+﻿define(["require", "DQX/Framework", "DQX/Controls", "DQX/Msg", "DQX/SQL", "DQX/DocEl", "DQX/Popup", "DQX/Wizard", "DQX/DataFetcher/DataFetchers", "DQX/Application"],
+    function (require, Framework, Controls, Msg, SQL, DocEl, Popup, Wizard, DataFetcher, Application) {
         WizardSelectSamples = Wizard.Create("WizardSelectSamples");
 
 
@@ -65,18 +65,17 @@
         });
 
         WizardSelectSamples.execute = function (retFunction) {
-            var metaData = globalPage.metaData2;
-            var studiesList = metaData.getStudiesList();
+            var studiesList = Application.prefetched.getStudiesList();
 
             if (!WizardSelectSamples._listItemsCreated) {
                 var items = [];
                 for (var i = 0; i < studiesList.length; i++) {
-                    items.push({ id: studiesList[i], content: '<b>' + studiesList[i] + '</b> ' + metaData.getStudyInfo(studiesList[i]).Title });
+                    items.push({ id: studiesList[i], content: '<b>' + studiesList[i] + '</b> ' + Application.prefetched.getStudyInfo(studiesList[i]).Title });
                 }
                 WizardSelectSamples.studiesList.setItems(items, '');
                 items = [];
-                for (var i = 0; i < metaData.sample_classification_typesMap['region'].SampleClassifications.length; i++) {
-                    var region = metaData.sample_classification_typesMap['region'].SampleClassifications[i];
+                for (var i = 0; i < Application.prefetched.sample_classification_typesMap['region'].SampleClassifications.length; i++) {
+                    var region = Application.prefetched.sample_classification_typesMap['region'].SampleClassifications[i];
                     items.push({ id: region.ID, content: '<b>' + region.Name + '</b> '});
                 }
                 WizardSelectSamples.regionsList.setItems(items, '');
@@ -114,11 +113,10 @@
 //
 //                return;
 //            }
-            var metaData = globalPage.metaData2;
             if (WizardSelectSamples.searchType == 'byRegion') {
                 var samples = [];
                 WizardSelectSamples.activeRegions.forEach(function(region_id)  {
-                    metaData.sample_classificationsMap[region_id].getPublicSamples().forEach(function (sample) {
+                  Application.prefetched.sample_classificationsMap[region_id].getPublicSamples().forEach(function (sample) {
                         if ($.inArray(sample.SampleContext, samples) == -1)
                             samples.push(sample);
 
