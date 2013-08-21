@@ -1,7 +1,9 @@
 ﻿define(["require", "DQX/Application", "DQX/Framework", "DQX/Msg", "DQX/Utils", "DQX/DocEl", "DQX/Controls",
   "DQX/SQL", "DQX/SVG", "DQX/FramePanel", "DQX/FrameTree", "DQX/FrameList", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherSnpAsync", "DQX/DataFetcher/DataFetcherAnnotation",
-  "Wizards/WizardSelectSamples", "Views/GenotypeViewer/GenotypeViewer", "Common", "MetaData"],
-  function (require, Application, Framework, Msg, DQX, DocEl, Controls, SQL, SVG, FramePanel, FrameTree, FrameList, DataFetcher, DataFetcherSnp, DataFetcherAnnotation, WizardSelectSamples, GenotypeViewer, Common, MetaData) {
+  "Wizards/WizardSelectSamples", "Wizards/WizardFindGene", "Views/GenotypeViewer/GenotypeViewer", "Common", "MetaData"],
+  function (require, Application, Framework, Msg, DQX, DocEl, Controls,
+            SQL, SVG, FramePanel, FrameTree, FrameList, DataFetcher, DataFetcherSnp, DataFetcherAnnotation,
+            WizardSelectSamples, WizardFindGene, GenotypeViewer, Common, MetaData) {
     var SampleBrowserModule = {
 
       init: function () {

@@ -1,5 +1,5 @@
-﻿define(["require", "DQX/Framework", "DQX/Controls", "DQX/Msg", "DQX/SQL", "DQX/DocEl", "DQX/Popup", "DQX/Wizard", "DQX/DataFetcher/DataFetchers", "Wizards/FindGeneControl", "MetaData1"],
-    function (require, Framework, Controls, Msg, SQL, DocEl, Popup, Wizard, DataFetcher, FindGeneControl, MetaData1) {
+﻿define(["require", "DQX/Framework", "DQX/Controls", "DQX/Msg", "DQX/SQL", "DQX/DocEl", "DQX/Popup", "DQX/Wizard", "DQX/DataFetcher/DataFetchers", "Wizards/FindGeneControl", "MetaData"],
+    function (require, Framework, Controls, Msg, SQL, DocEl, Popup, Wizard, DataFetcher, FindGeneControl, MetaData) {
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Implements the "Find Gene" wizard
@@ -52,8 +52,8 @@
         /////// Page: find keyword /////////////////////////////////
 
         WizardFindGene.controlFindByKeyword = FindGeneControl.Instance('FindByKeyword', {
-            database: MetaData1.database,
-            annotationTableName: MetaData1.tableAnnotation,
+            database: MetaData.database,
+            annotationTableName: MetaData.tableAnnotation,
             notifyEnter: function () {
                 if (WizardFindGene.controlFindByKeyword.getHasValidGeneList())
                     WizardFindGene._onNext();
@@ -75,7 +75,7 @@
 
         /////// Page: search by position /////////////////////////////////
 
-        WizardFindGene.searchChromosome = Controls.Combo('SearchRegionChromosome', { label: 'Chromosome:', value: 'NRAF', states: MetaData1.chromosomes }).setHasDefaultFocus();
+        WizardFindGene.searchChromosome = Controls.Combo('SearchRegionChromosome', { label: 'Chromosome:', value: 'NRAF', states: MetaData.chromosomes }).setHasDefaultFocus();
         WizardFindGene.searchStart = Controls.Edit('SearchRegionStart', { size: 10 });
         WizardFindGene.searchEnd = Controls.Edit('SearchRegionEnd', { size: 10 });
         var handleModifiedStart = function () { WizardFindGene.handleModifiedStart(); };
@@ -198,7 +198,7 @@
                     SQL.WhereClause.CompareFixed('fstart', '<=', str_stop),
                     SQL.WhereClause.CompareFixed('ftype', '=', 'gene'),
                 ]);
-                var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData1.database, MetaData1.tableAnnotation);
+                var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableAnnotation);
                 fetcher.setMaxResultCount(201);
                 fetcher.addColumn('fid', 'ST');
                 fetcher.addColumn('fname', 'ST');

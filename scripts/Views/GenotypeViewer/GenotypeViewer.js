@@ -268,6 +268,7 @@
           that.data.gene_info = gene_info;
           that.view.genome_scale.domain([gene_info.start, gene_info.stop]);
           that.view.chrom = gene_info.chromid;
+          that.snp_cache.set_chrom(gene_info.chromid);
           that.data.snp_cache.set_chrom(gene_info.chromid);
           that.rescaleGenomic({left: gene_info.start, right:gene_info.stop})
         } else {

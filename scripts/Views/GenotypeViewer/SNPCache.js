@@ -193,7 +193,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
 
       that._process_provider_queue = function () {
         //TODO Priority - ie things in view get loaded first
-        if (that.current_provider_requests < 1 && that.provider_queue.length > 0) {
+        if (that.current_provider_requests < 4 && that.provider_queue.length > 0) {
           var chunk = that.provider_queue.pop();
           var start = chunk.chunk * CHUNK_SIZE;
           var end = Math.min(that.snp_positions_by_chrom[chunk.chrom].length-1, (chunk.chunk + 1) * CHUNK_SIZE);
