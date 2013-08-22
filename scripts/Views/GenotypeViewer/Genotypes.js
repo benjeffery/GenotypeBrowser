@@ -1,8 +1,7 @@
-define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
-  function (tween, DQX, CanvasArea) {
-    return function Genotypes(bounding_box, left_overdraw) {
-      var that = CanvasArea(bounding_box);
-      that.left_overdraw = left_overdraw;
+define(["tween", "DQX/Utils"],
+  function (tween, DQX) {
+    return function Genotypes() {
+      var that = {};
 
       that._draw = function (ctx, view, data) {
         var x_scale = view.snp_scale;
@@ -71,6 +70,9 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
             }
           });
         }
+
+        //Return our height
+        return _(data.samples).max('vert').value().vert + row_height;
       };
       return that;
     };

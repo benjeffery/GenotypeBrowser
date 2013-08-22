@@ -1,6 +1,6 @@
 define([],
     function () {
-        return function CanvasArea(bounding_box) {
+        return function AbsCanvasArea(bounding_box) {
             var that = {};
             that.bounding_box = bounding_box;
             that.contains = function(point) {

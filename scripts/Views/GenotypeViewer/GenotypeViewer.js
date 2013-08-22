@@ -3,11 +3,14 @@
   "DQX/FramePanel", "MetaData", "Views/GenotypeViewer/ColumnHeader",
   "Views/GenotypeViewer/RowHeader", "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
   "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
-  "Views/GenotypeViewer/IntervalCache", "Views/GenotypeViewer/SNPCache"],
+  "Views/GenotypeViewer/IntervalCache", "Views/GenotypeViewer/SNPCache", "Views/GenotypeViewer/CanvasStack",
+  "Views/GenotypeViewer/LDMap"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
             SVG,
             FramePanel, MetaData, ColumnHeader,
-            RowHeader, GeneMap, Genotypes, TouchEvents, Controls, Scale, IntervalCache, SNPCache) {
+            RowHeader, GeneMap, Genotypes,
+            TouchEvents, Controls, Scale, IntervalCache, SNPCache,
+            CanvasStack, LDMap) {
     return function GenotypeViewer(frame, providers) {
       var that = {};
       that.providers = providers;
@@ -110,14 +113,14 @@
       that.resize = function () {
         var v = that.view;
         v.controls.bounding_box = {t: 0, r: that.row_header_width, b: that.col_header_height + that.gene_map_height, l: 0};
-        v.genotypes.bounding_box = {t: that.col_header_height + that.gene_map_height, r: that.width(), b: that.height(), l: that.row_header_width};
+        v.stack.bounding_box = {t: that.col_header_height + that.gene_map_height, r: that.width(), b: that.height(), l: that.row_header_width};
         v.column_header.bounding_box = {t: that.gene_map_height, r: that.width(), b: that.col_header_height + that.gene_map_height, l: that.row_header_width};
         v.row_header.bounding_box = {t: that.col_header_height + that.gene_map_height, r: that.row_header_width, b: that.height(), l: 0};
         v.gene_map.bounding_box = {t: 0, r: that.width(), b: that.gene_map_height, l: that.row_header_width};
         that.canvas.attr('width', that.width())
           .attr('height', that.height());
         that.view.genome_scale.range([ 0, v.gene_map.bounding_box.r - v.gene_map.bounding_box.l - 20]);
-        that.view.snp_scale.range([ 0, v.genotypes.bounding_box.r - v.genotypes.bounding_box.l - 40]);
+        that.view.snp_scale.range([ 0, v.stack.bounding_box.r - v.stack.bounding_box.l - 40]);
         that.needUpdate = "resize";
         that.tick();
       };
@@ -454,7 +457,10 @@
       that.view = {
         column_header: ColumnHeader({}, that.clickSNP),
         gene_map: GeneMap({}, that.clickSNP),
-        genotypes: Genotypes({}, that.row_header_width),
+        stack: CanvasStack({}, [
+          Genotypes(),
+          LDMap()
+        ]),
         row_header: RowHeader({}),
         controls: Controls({}, {
           zoom_in: function () {
@@ -482,7 +488,7 @@
         chrom: 'MAL13'
       };
       that.data.snp_cache.set_chrom('MAL13');
-      that.components = ['genotypes', 'column_header', 'gene_map', 'row_header', 'controls'];
+      that.components = ['stack', 'column_header', 'gene_map', 'row_header', 'controls'];
       that.last_view_change = 'genome';
       
 

@@ -1,7 +1,7 @@
-define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
-  function (tween, DQX, CanvasArea) {
+define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
+  function (tween, DQX, AbsCanvasArea) {
     return function GeneMap(bounding_box, clickSNPCallback) {
-      var that = CanvasArea(bounding_box);
+      var that = AbsCanvasArea(bounding_box);
       that.clickSNPCallback = clickSNPCallback;
       that.colours = [0x800000, 0xFF0000, 0xFFFF00, 0x808000, 0x00FF00,	0x008000,	0x00FFFF,
       0x008080,	0x0000FF,	0x000080,	0xFF00FF, 0x800080];

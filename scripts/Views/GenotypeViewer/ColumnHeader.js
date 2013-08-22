@@ -1,7 +1,7 @@
-define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
-  function (tween, DQX, CanvasArea) {
+define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
+  function (tween, DQX, AbsCanvasArea) {
     return function ColumnHeader(bounding_box, clickSNPCallback) {
-      var that = CanvasArea(bounding_box);
+      var that = AbsCanvasArea(bounding_box);
       that.clickSNPCallback = clickSNPCallback;
 
       that._draw = function (ctx, view, data) {
@@ -96,10 +96,10 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
           for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
             snp = snps[i];
             if (!snp) continue;
-            ctx.moveTo(scale(i), that.height() + (view.genotypes.bounding_box.b - view.genotypes.bounding_box.t));
+            ctx.moveTo(scale(i), that.height() + (view.stack.bounding_box.b - view.stack.bounding_box.t));
             ctx.lineTo(scale(i), 20);
           }
-          ctx.moveTo(scale(snps.length), that.height() + (view.genotypes.bounding_box.b - view.genotypes.bounding_box.t));
+          ctx.moveTo(scale(snps.length), that.height() + (view.stack.bounding_box.b - view.stack.bounding_box.t));
           ctx.lineTo(scale(snps.length), 20);
           ctx.stroke();
         }

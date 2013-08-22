@@ -1,4 +1,4 @@
-define(["tween", "DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
+define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
     function (tween, DQX, CanvasArea) {
         return function RowHeader(bounding_box) {
             var that = CanvasArea(bounding_box);

@@ -1,7 +1,7 @@
-define(["DQX/Utils", "Views/GenotypeViewer/CanvasArea"],
-    function (DQX, CanvasArea) {
+define(["DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
+    function (DQX, AbsCanvasArea) {
         return function Controls(bounding_box, callbacks) {
-            var that = CanvasArea(bounding_box);
+            var that = AbsCanvasArea(bounding_box);
             that.callbacks = callbacks;
 
             that.images = {};
