@@ -11,13 +11,15 @@ define(["tween", "DQX/Utils"],
         var start_snp = Math.floor(x_scale.domain()[0]);
         var end_snp = Math.ceil(x_scale.domain()[1]);
         var genotypes = data.snp_cache.genotypes;
-        if (!genotypes) return that;
+        if (!genotypes) return;
+        if (snp_width < 4) return;
         var num_samples = data.samples.length;
         var PAB, PA, PB, A;
         console.time('LD');
         ctx.translate(x_scale(start_snp), 0);
         ctx.rotate(-Math.PI / 4);
         //ctx.scale(1,0.25);
+        //TODO Transpose for cache speed
         for (var i = start_snp, end = end_snp; i < end; ++i) {
           for (var j = i+1; j < end; ++j) {
             PAB = 0; PA = 0; PB = 0;
