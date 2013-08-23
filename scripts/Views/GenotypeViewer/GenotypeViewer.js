@@ -343,44 +343,42 @@
               var gt = genotypes[s].gt;
               //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
               for(var j=view.cache_start_snp, ref = view.cache_end_snp; j < ref; j+= snps_per_pixel) {
-//                var genotype = snps[j].genotypes[i];
-//                var pixel = genotype.pixel;
-//                data[4*p] = pixel[0];
-//                data[4*p+1] = pixel[1];
-//                data[4*p+2] = pixel[2];
-//                data[4*p+3] = 255;
-//                p++;
-                var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
-                var num_snps_in_pixel = 0;
-                var found_alts = false;
-                //Loop over the snps in this pixel
-                for (var k = j, ref2 = j+snps_per_pixel, ref3 = view.cache_end_snp; k < ref2 && k < ref3; k++) {
-                  if (gt[k] == 1)
-                    if (found_alts) {
-                      result_pixel_r += r[k];
-                      result_pixel_g += g[k];
-                      result_pixel_b += b[k];
-                      num_snps_in_pixel += 1;
-                    } else {
-                      found_alts = true;
-                      result_pixel_r = r[k];
-                      result_pixel_g = g[k];
-                      result_pixel_b = b[k];
-                      num_snps_in_pixel = 1
-                    }
-                  else
-                    if (!found_alts) {
-                      result_pixel_r += r[k];
-                      result_pixel_g += g[k];
-                      result_pixel_b += b[k];
-                      num_snps_in_pixel += 1;
-                    }
-                }
-                data[4*p] = result_pixel_r/num_snps_in_pixel;
-                data[4*p+1] = result_pixel_g/num_snps_in_pixel;
-                data[4*p+2] = result_pixel_b/num_snps_in_pixel;
+                data[4*p] = r[j];
+                data[4*p+1] = g[j];
+                data[4*p+2] = b[j];
                 data[4*p+3] = 255;
                 p++;
+//                var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
+//                var num_snps_in_pixel = 0;
+//                var found_alts = false;
+//                //Loop over the snps in this pixel
+//                for (var k = j, ref2 = j+snps_per_pixel, ref3 = view.cache_end_snp; k < ref2 && k < ref3; k++) {
+//                  if (gt[k] == 1)
+//                    if (found_alts) {
+//                      result_pixel_r += r[k];
+//                      result_pixel_g += g[k];
+//                      result_pixel_b += b[k];
+//                      num_snps_in_pixel += 1;
+//                    } else {
+//                      found_alts = true;
+//                      result_pixel_r = r[k];
+//                      result_pixel_g = g[k];
+//                      result_pixel_b = b[k];
+//                      num_snps_in_pixel = 1
+//                    }
+//                  else
+//                    if (!found_alts) {
+//                      result_pixel_r += r[k];
+//                      result_pixel_g += g[k];
+//                      result_pixel_b += b[k];
+//                      num_snps_in_pixel += 1;
+//                    }
+//                }
+//                data[4*p] = result_pixel_r/num_snps_in_pixel;
+//                data[4*p+1] = result_pixel_g/num_snps_in_pixel;
+//                data[4*p+2] = result_pixel_b/num_snps_in_pixel;
+//                data[4*p+3] = 255;
+//                p++;
               }
               ctx.putImageData(image_data,0,0);
             }
