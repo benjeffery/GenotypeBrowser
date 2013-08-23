@@ -93,7 +93,14 @@
         that.needUpdate = "dragEnd";
       };
       that.clickSNP = function (snp_index) {
-        that.data.snps[snp_index].selected = that.data.snps[snp_index].selected ? false : true;
+        if (_.contains(that.view.selected_snps,snp_index)) {
+          that.view.selected_snps = _.filter(that.view.selected_snps, function(index) {return index !== snp_index});
+        }
+        else
+          that.view.selected_snps.push(snp_index);
+        //TODO SNPs should exist by here
+        that.data.snp_cache.snps[snp_index] || (that.data.snp_cache.snps[snp_index] = {});
+        that.data.snp_cache.snps[snp_index].selected = !that.data.snp_cache.snps[snp_index].selected;
         that.sortSamples();
       };
       that.modify_compress = function (compress) {
@@ -144,12 +151,11 @@
       that.sortSamples = function () {
         var sample_set = that.data.samples;
         var genotypes = that.data.snp_cache.genotypes;
-        that.data.samples.forEach(function (sample, i) {
+        _(that.data.samples).forEach(function (sample, i) {
           sample.selected_haplotype = '';
           if (genotypes) {
-            that.data.snp_cache.snps.forEach(function (snp, j) {
-              if (snp.selected)
-                sample.selected_haplotype += genotypes[i].gt[j];
+            _(that.view.selected_snps).forEach(function (snp) {
+                sample.selected_haplotype += genotypes[i].gt[snp];
             });
           }
         });
@@ -483,7 +489,8 @@
         compress: false,
         row_height: that.row_height,
         scroll_pos: 0,
-        chrom: 'MAL13'
+        chrom: 'MAL13',
+        selected_snps: []
       };
       that.data.snp_cache.set_chrom('MAL13');
       that.components = ['stack', 'column_header', 'gene_map', 'row_header', 'controls'];
