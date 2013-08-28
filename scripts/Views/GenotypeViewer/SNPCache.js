@@ -104,12 +104,8 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         start = Math.floor(start / CHUNK_SIZE);
         end = Math.ceil(end / CHUNK_SIZE);
         that.last_request = [start,end];
-        var fetch_state = that.fetch_state;
         for (var i = start; i < end; ++i)
-          if (!fetch_state[i] && i < fetch_state.length) {
-            fetch_state[i] = FETCHING;
-            that._add_to_provider_queue(that.chrom, i)
-          }
+          that._add_to_provider_queue_or_promote(that.chrom, i)
       };
 
       that.posToIndex = function (pos) {
@@ -185,15 +181,26 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         return that.update_callback();
       };
 
-      that._add_to_provider_queue = function (chrom, chunk) {
-        that.provider_queue.push({chrom: chrom, chunk: chunk});
-        if (that.provider_queue.length == 1) {
-          that._process_provider_queue()
+      that._add_to_provider_queue_or_promote = function (chrom, chunk) {
+        var queue_entry = {chrom: chrom, chunk: chunk};
+        if (_.detect(that.provider_queue, queue_entry)) {
+          //All ready in the queue so remove it and add the end
+          that.provider_queue = _.reject(that.provider_queue, queue_entry);
+          that.provider_queue.push(queue_entry);
+        } else {
+          //Not in queue
+          if (that.fetch_state_by_chrom[chrom][chunk] == UNFETCHED && chunk < that.fetch_state_by_chrom[chrom].length) {
+            that.fetch_state_by_chrom[chrom][chunk] = FETCHING;
+            that.provider_queue.push(queue_entry);
+            //If we just added the first one then we need to start the processing
+            if (that.provider_queue.length == 1) {
+              that._process_provider_queue()
+            }
+          }
         }
       };
 
       that._process_provider_queue = function () {
-        //TODO Priority - ie things in view get loaded first
         if (that.current_provider_requests < 4 && that.provider_queue.length > 0) {
           var chunk = that.provider_queue.pop();
           var start = chunk.chunk * CHUNK_SIZE;
