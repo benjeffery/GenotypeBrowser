@@ -54,10 +54,11 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         //Clear out everything
         that.samples = samples;
         that.genotypes_by_chrom = {};
-        that.fetch_state_by_chrom = {};
+        _(that.fetch_state_by_chrom).forEach(function (fetch_state, chrom){
+          that.fetch_state_by_chrom[chrom] = new Uint8Array(fetch_state.length);
+        });
         that.provider_queue = [];
-        //TODO Don't really need to wipe this
-        that.snp_positions_by_chrom = {};
+        //Then call set chrom to set the data we expose
         that.set_chrom(that.chrom);
       };
 
