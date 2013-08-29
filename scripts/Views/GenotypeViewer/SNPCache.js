@@ -3,25 +3,6 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
     return function SNPCache(providers, update_callback, samples) {
 
 
-//      //Set colours for the snps
-//      var len = samples.length;
-//      snps.forEach(function (snp, i) {
-//        snp.col = {r: 0, g: 0, b: 0};
-//        snp.genotypes.forEach(function (genotype, i) {
-//          var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
-//          genotype.pixel = [col.r, col.g, col.b];
-//          var col_snp = snp.col;
-//          col_snp.r += col.r;
-//          col_snp.g += col.g;
-//          col_snp.b += col.b;
-//        });
-//        snp.col.r /= len;
-//        snp.col.g /= len;
-//        snp.col.b /= len;
-//        snp.rgb = snp.col;
-//        snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
-//
-
       var UNFETCHED = 0;
       var FETCHING = 1;
       var FETCHED = 2;
@@ -66,6 +47,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         that.snp_positions_by_chrom[chrom] || (that.snp_positions_by_chrom[chrom] = []);
         that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = {});
         that.fetch_state_by_chrom[chrom] || (that.fetch_state_by_chrom[chrom] = []);
+
         //Set the data to be this chrom
         that.snp_positions = that.snp_positions_by_chrom[chrom];
         that.snps = that.snps_by_chrom[chrom];
@@ -79,6 +61,11 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
             if (positions) {
               that.snp_positions_by_chrom[chrom] = positions;
               that.fetch_state_by_chrom[chrom] = new Uint8Array(Math.ceil(positions.length / CHUNK_SIZE));
+              that.snps_by_chrom[chrom].alt = new Uint8Array(positions.length);
+              that.snps_by_chrom[chrom].ref = new Uint8Array(positions.length);
+              that.snps_by_chrom[chrom].r = new Uint8Array(positions.length);
+              that.snps_by_chrom[chrom].g = new Uint8Array(positions.length);
+              that.snps_by_chrom[chrom].b = new Uint8Array(positions.length);
               that.fetching_positions = false;
               //Call again to set the data to the chrom again as we changed it and get an update_callback run.
               that.set_chrom(chrom);
@@ -130,11 +117,10 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         if (data) {
           that.fetch_state_by_chrom[chrom][chunk] = FETCHED;
           var num_snps = that.snp_positions_by_chrom[chrom].length;
+          var num_samples = that.samples.length;
 
           that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = {});
           var snps = that.snps_by_chrom[chrom];
-          snps.ref || (snps.ref = new Uint8Array(num_snps));
-          snps.alt || (snps.alt = new Uint8Array(num_snps));
 
           that.genotypes_by_chrom[chrom] || (that.genotypes_by_chrom[chrom] = []);
           var genotypes = that.genotypes_by_chrom[chrom];
@@ -167,13 +153,40 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
               sample_gt.alt[i] = data[d];
             for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++) {
               var col = SVG.genotype_rgb(sample_gt.ref[i], sample_gt.alt[i]);
-              sample_gt.r[i] = col.r;
-              sample_gt.g[i] = col.g;
-              sample_gt.b[i] = col.b;
+              _(['r','g','b']).forEach(function (c) {
+                sample_gt[c][i] = col[c];
+                snps[c][i] += col[c];
+                console.log(col[c], snps[c][i]);
+              });
               //SET THE GENOTYPE AS IT DOES NOT COME FROM THE VCF
               sample_gt.gt[i] = sample_gt.alt[i] >= sample_gt.ref[i] ? (sample_gt.alt[i] >= 5 ? 1 : 0) : 0;
             }
           });
+          _(['r','g','b']).forEach(function (c) {
+            for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++)
+              snps[c][i] /= num_samples;
+          });
+
+//      //Set colours for the snps
+//      var len = samples.length;
+//      snps.forEach(function (snp, i) {
+//        snp.col = {r: 0, g: 0, b: 0};
+//        snp.genotypes.forEach(function (genotype, i) {
+//          var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
+//          genotype.pixel = [col.r, col.g, col.b];
+//          var col_snp = snp.col;
+//          col_snp.r += col.r;
+//          col_snp.g += col.g;
+//          col_snp.b += col.b;
+//        });
+//        snp.col.r /= len;
+//        snp.col.g /= len;
+//        snp.col.b /= len;
+//        snp.rgb = snp.col;
+//        snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
+//
+
+
         } else {
           console.log("no data on genotype call");
           that.fetch_state_by_chrom[chrom][chunk] = UNFETCHED;
