@@ -70,8 +70,6 @@
 
         that.genotypeProvider = function (chrom, start, end, sample_ids, callback) {
           var xhr = new XMLHttpRequest();
-          //var sample_ids = samples.map(DQX.attr('ID'));
-          //var sample_ids = ['PF0004-C','PF0007-C','PF0009-C','PF0010-C','PF0011-C','PF0016-C','PF0021-C','PF0022-C','PF0024-C','PF0025-C','PF0026-C','PF0028-C','PF0029-C','PF0031-C','PF0032-C','PF0035-C','PF0036-C','PF0038-C','PF0039-C','PF0040-C','PF0042-C','PF0043-C','PF0044-C','PF0045-C','PF0046-C','PF0047-C','PF0049-C','PF0050-C','PF0051-C','PF0054-C','PF0055-C','PF0057-C','PF0058-C','PF0062-C','PF0063-C','PF0069-C','PF0073-C','PF0074-C','PF0077-C','PF0080-C','PF0081-C','PF0084-C','PF0089-C','PF0090-C','PF0096-C','PF0097-C','PF0098-C','PF0099-C','PF0100-C','PF0101-C','PF0102-C','PF0103-C','PF0104-C','PF0107-C','PF0108-C','PF0109-C','PF0112-C','PF0113-C','PF0114-C','PF0115-C','PF0116-C','PF0117-C','PF0121-C','PF0122-C','PF0123-C','PF0125-C','PF0127-C','PF0130-C','PF0131-C','PF0132-C','PF0133-C'];
           var seqids = '';
           for (var i = 0; i < sample_ids.length-1; i++) {
             seqids += sample_ids[i];
@@ -93,49 +91,6 @@
           };
           xhr.send();
         };
-
-        that.snpProvider = function (chrom, start, end, callback) {
-          var a = [];
-          for (var i = 0; i < 2000; i++)
-            a.push({})
-          callback(a);
-          return;
-          var fetcher = DataFetcher.RecordsetFetcher(serverUrl, MetaData.database, MetaData.tableSNPInfo);
-          //fetcher.setMaxResultCount(1001);
-          fetcher.addColumn('snpid', 'ST');
-          fetcher.addColumn('MutName', 'ST');
-          fetcher.addColumn('pos', 'IN');
-          fetcher.addColumn('ref', 'ST');
-          fetcher.addColumn('nonrref', 'ST');
-          fetcher.addColumn('ancestral', 'ST');
-      //    DQX.setProcessing("Downloading...");
-          var q = SQL.WhereClause.AND();
-          q.addComponent(SQL.WhereClause.CompareFixed('chrom', '=', MetaData.chrom_map[chrom].idx));
-          q.addComponent(SQL.WhereClause.CompareFixed('pos', '>=', start));
-          q.addComponent(SQL.WhereClause.CompareFixed('pos', '<', end));
-          fetcher.getData(q, "pos",
-            function (data) {
-              var snps = [];
-              for (var i = 0; i < data.snpid.length; i++) {
-                snps.push(
-                  {
-                    chrom: chrom,
-                    id: data.snpid[i],
-                    mutation: data.MutName[i],
-                    pos: data.pos[i],
-                    ref: data.ref[i],
-                    nonref: data.nonrref[i],
-                    ancestral: data.ancestral[i]
-                  }
-                )
-              }
-         //     DQX.stopProcessing();
-              callback(snps);
-            },
-            callback
-          );
-        };
-
 
         that.createPanels = function () {
           this.ctrls = {};
@@ -171,7 +126,6 @@
           this.controlPanel.render();
 
           var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, {
-            snp:that.snpProvider,
             genotype:that.genotypeProvider,
             position:that.snpIndexProvider,
             annotation:that.annotationProvider});
