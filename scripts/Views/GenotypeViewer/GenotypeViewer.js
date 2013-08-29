@@ -98,9 +98,6 @@
         }
         else
           that.view.selected_snps.push(snp_index);
-        //TODO SNPs should exist by here
-        that.data.snp_cache.snps[snp_index] || (that.data.snp_cache.snps[snp_index] = {});
-        that.data.snp_cache.snps[snp_index].selected = !that.data.snp_cache.snps[snp_index].selected;
         that.sortSamples();
       };
       that.modify_compress = function (compress) {

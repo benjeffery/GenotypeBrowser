@@ -24,12 +24,10 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
 
       var UNFETCHED = 0;
       var FETCHING = 1;
-      var FETCHED_ONE = 2;
-      var FETCHED_BOTH = 3;
+      var FETCHED = 2;
       var CHUNK_SIZE = 2000;
 
       var that = {};
-      that.snp_provider = providers.snp;
       that.genotype_provider = providers.genotype;
       that.position_provider = providers.position;
       that.update_callback = update_callback;
@@ -66,7 +64,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         that.chrom = chrom;
         //Insert arrays for this chrom
         that.snp_positions_by_chrom[chrom] || (that.snp_positions_by_chrom[chrom] = []);
-        that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = []);
+        that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = {});
         that.fetch_state_by_chrom[chrom] || (that.fetch_state_by_chrom[chrom] = []);
         //Set the data to be this chrom
         that.snp_positions = that.snp_positions_by_chrom[chrom];
@@ -120,60 +118,64 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
           return _(that.snp_positions).last();
       };
 
-      that._insert_received_data = function (type, chunk, samples, data) {
+      that._insert_received_data = function (chunk, samples, data) {
         if (samples && !_.isEqual(samples, that.samples)) return;
         var chrom = chunk.chrom;
         chunk = chunk.chunk;
         var start_index = chunk * CHUNK_SIZE;
-        if (that.fetch_state_by_chrom[chrom][chunk] !== FETCHING && that.fetch_state_by_chrom[chrom][chunk] !== FETCHED_ONE ) {
+        if (that.fetch_state_by_chrom[chrom][chunk] !== FETCHING) {
           console.log("Got data for chunk that was not fetching", chunk);
           return;
         }
         if (data) {
-          if (type == 'genotype') {
-            that.genotypes_by_chrom[chrom] || (that.genotypes_by_chrom[chrom] = []);
-            var genotypes = that.genotypes_by_chrom[chrom];
-            that.fetch_state_by_chrom[chrom][chunk] += 1;
-            var num_snps = that.snp_positions_by_chrom[chrom].length;
-            _(that.samples).forEach(function (sample,i) {
-              genotypes[i] || (genotypes[i] = {});
-              var sample_gt = genotypes[i];
-              sample_gt || (sample_gt = {});
-              sample_gt.alt || (sample_gt.alt = new Uint8Array(num_snps));
-              sample_gt.ref || (sample_gt.ref = new Uint8Array(num_snps));
-              sample_gt.r || (sample_gt.r = new Uint8Array(num_snps));
-              sample_gt.g || (sample_gt.g = new Uint8Array(num_snps));
-              sample_gt.b || (sample_gt.b = new Uint8Array(num_snps));
-              sample_gt.gt || (sample_gt.gt = new Uint8Array(num_snps));
-            });
-            data = new Uint8Array(data);
-           var d = 0;
-            _(that.samples).forEach(function (sample,j) {
-              var sample_gt = genotypes[j];
+          that.fetch_state_by_chrom[chrom][chunk] = FETCHED;
+          var num_snps = that.snp_positions_by_chrom[chrom].length;
+
+          that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = {});
+          var snps = that.snps_by_chrom[chrom];
+          snps.ref || (snps.ref = new Uint8Array(num_snps));
+          snps.alt || (snps.alt = new Uint8Array(num_snps));
+
+          that.genotypes_by_chrom[chrom] || (that.genotypes_by_chrom[chrom] = []);
+          var genotypes = that.genotypes_by_chrom[chrom];
+
+          _(that.samples).forEach(function (sample,i) {
+            genotypes[i] || (genotypes[i] = {});
+            var sample_gt = genotypes[i];
+            sample_gt || (sample_gt = {});
+            sample_gt.alt || (sample_gt.alt = new Uint8Array(num_snps));
+            sample_gt.ref || (sample_gt.ref = new Uint8Array(num_snps));
+            sample_gt.r || (sample_gt.r = new Uint8Array(num_snps));
+            sample_gt.g || (sample_gt.g = new Uint8Array(num_snps));
+            sample_gt.b || (sample_gt.b = new Uint8Array(num_snps));
+            sample_gt.gt || (sample_gt.gt = new Uint8Array(num_snps));
+          });
+          data = new Uint8Array(data);
+          var d = 0;
+          for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
+            snps.ref[i] = data[d];
+          for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
+            snps.alt[i] = data[d];
+          _(that.samples).forEach(function (sample,j) {
+            var sample_gt = genotypes[j];
+            //COMMENTED OUT AS OUR VCFs HAVE NO GENOTYPES!!!
 //              for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
 //                sample_gt.gt[i] = data[d];
-              for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
-                sample_gt.ref[i] = data[d];
-              for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
-                sample_gt.alt[i] = data[d];
-              for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++) {
-                var col = SVG.genotype_rgb(sample_gt.ref[i], sample_gt.alt[i]);
-                sample_gt.r[i] = col.r;
-                sample_gt.g[i] = col.g;
-                sample_gt.b[i] = col.b;
-                sample_gt.gt[i] = sample_gt.alt[i] >= sample_gt.ref[i] ? (sample_gt.alt[i] >= 5 ? 1 : 0) : 0;
-              }
-            });
-          } else {
-            //SNP Data
-            that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = []);
-            _(data).forEach(function (snp, i) {
-              var k = i + start_index;
-              that.snps_by_chrom[chrom][k] = snp;
-            });
-          }
+            for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
+              sample_gt.ref[i] = data[d];
+            for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
+              sample_gt.alt[i] = data[d];
+            for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++) {
+              var col = SVG.genotype_rgb(sample_gt.ref[i], sample_gt.alt[i]);
+              sample_gt.r[i] = col.r;
+              sample_gt.g[i] = col.g;
+              sample_gt.b[i] = col.b;
+              //SET THE GENOTYPE AS IT DOES NOT COME FROM THE VCF
+              sample_gt.gt[i] = sample_gt.alt[i] >= sample_gt.ref[i] ? (sample_gt.alt[i] >= 5 ? 1 : 0) : 0;
+            }
+          });
         } else {
-          console.log("no data on ", type);
+          console.log("no data on genotype call");
           that.fetch_state_by_chrom[chrom][chunk] = UNFETCHED;
         }
         //Set chrom to update the exposed data
@@ -213,17 +215,9 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
             function (data) {
               that.current_provider_requests -= 1;
               //Clone as otherwise these can change
-              that._insert_received_data('genotype', _.clone(chunk), _.clone(that.samples), data);
+              that._insert_received_data(_.clone(chunk), _.clone(that.samples), data);
             });
-          that.snp_provider(chunk.chrom,
-            that.snp_positions_by_chrom[chunk.chrom][start],
-            that.snp_positions_by_chrom[chunk.chrom][end],
-            function (data) {
-              that.current_provider_requests -= 1;
-              that._insert_received_data('snp', _.clone(chunk), null, data);
-            });
-
-          that.current_provider_requests += 2;
+          that.current_provider_requests += 1;
         }
         if (that.provider_queue.length > 0) {
           setTimeout(that._process_provider_queue, 100);

@@ -8,6 +8,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
         var scale = view.snp_scale;
         var snp_width = scale(1) - scale(0);
         var snps = data.snp_cache.snps;
+        var pos = data.snp_cache.snp_positions;
         //Background
         var g = ctx.createLinearGradient(0, 0, 0, that.height());
         g.addColorStop(0, "rgba(255,255,255,0.85)");
@@ -21,8 +22,6 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
         if (alpha > 0) {
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, 0.5 * alpha);
           for (var i = view.start_snp, end = view.end_snp; i < end; ++i) {
-            var snp = snps[i];
-            if (!snp) continue;
             ctx.beginPath();
             ctx.moveTo(scale(i), 20);
             ctx.bezierCurveTo(scale(i), 10, scale(i + 0.5), 10, scale(i + 0.5), 0);
@@ -32,7 +31,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
             ctx.lineWidth = snp.selected ? 2 : 1;
             ctx.fill();
             ctx.stroke();
-            if (snp.selected) {
+            if (_.contains(view.selected_snps, i)) {
               ctx.beginPath();
               ctx.moveTo(scale(i), 20);
               ctx.lineTo(scale(i + 1), 20);
@@ -61,13 +60,14 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
           ctx.lineWidth = 2;
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, alpha);
           ctx.textBaseline = 'middle';
+          var asc = String.fromCharCode;
           for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
-            snp = snps[i];
-            if (!snp) continue;
+            //TODO Don't need to do this - just iterate over selected
+            var snp_selected = _.contains(view.selected_snps, i);
             ctx.save();
             ctx.translate(scale(i + 0.5), 70);
             ctx.rotate((angle / 360) * (2 * Math.PI));
-            if (snp.selected) {
+            if (snp_selected) {
               ctx.font = "bold " + font_size + "px sans-serif";
               ctx.fillStyle = DQX.getRGB(255, 255, 255, alpha);
             }
@@ -75,27 +75,27 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
               ctx.font = "" + font_size + "px sans-serif";
               ctx.fillStyle = DQX.getRGB(0, 0, 0, alpha);
             }
-            if (snp.selected) ctx.strokeText(snp.mutation, x, y + offset);
-            ctx.fillText(snp.mutation, x, y + offset);
+            //NO MUTATION NAMES FROM VCF
+//            if (snp_selected) ctx.strokeText(snp.mutation, x, y + offset);
+//            ctx.fillText(snp.mutation, x, y + offset);
             if (offset <= -6) {
-              if (snp.selected) ctx.strokeText(snp.ref + '→' + snp.nonref, x, y + offset + 15);
-              ctx.fillText(snp.ref + '→' + snp.nonref, x, y + offset + 15);
+              if (snp_selected) ctx.strokeText(asc(snps.ref[i]) + '→' + asc(snps.alt[i]), x, y + offset + 15);
+              ctx.fillText(asc(snps.ref[i]) + '→' + asc(snps.alt[i]), x, y + offset + 15);
             }
             if (offset <= -12) {
-              if (snp.selected) ctx.strokeText(snp.pos, x, y + offset + 30);
-              ctx.fillText(snp.pos, x, y + offset + 30);
+              if (snp_selected) ctx.strokeText(snp[i], x, y + offset + 30);
+              ctx.fillText(pos[i], x, y + offset + 30);
             }
             ctx.restore()
           }
         }
 
+        //Full length lines
         ctx.lineWidth = 1;
         alpha = tween.manual(snp_width, 10, 20, e, 0, 0.50);
         if (alpha > 0) {
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, alpha);
           for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
-            snp = snps[i];
-            if (!snp) continue;
             ctx.moveTo(scale(i), that.height() + (view.stack.bounding_box.b - view.stack.bounding_box.t));
             ctx.lineTo(scale(i), 20);
           }
