@@ -13,9 +13,9 @@ define(["DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
             });
 
             that.buttons = {
-                zoom_in: {img:'MagGlassIn', l:0, t:22},
-                zoom_out: {img: 'MagGlassOut', l:30, t:22},
-                zoom_all: {img: 'MagGlassAll', l:60, t:22}
+                zoom_in: {img:'MagGlassIn', l:0, t:42},
+                zoom_out: {img: 'MagGlassOut', l:30, t:42},
+                zoom_all: {img: 'MagGlassAll', l:60, t:42}
             };
 
             that._draw = function(ctx, view, data) {
@@ -31,8 +31,8 @@ define(["DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
                 ctx.strokeStyle = DQX.getRGB(255,255,255);
                 ctx.fillStyle = DQX.getRGB(0,0,0);
                 var text = (view.end_snp - view.start_snp) + DQX.pluralise('snp', (view.end_snp - view.start_snp));
-                ctx.strokeText(text, 5, 5);
-                ctx.fillText(text, 5, 5);
+                ctx.strokeText(text, 5, 25);
+                ctx.fillText(text, 5, 25);
                 for (var key in that.buttons) {
                     var button = that.buttons[key];
                     ctx.drawImage(that.images[button.img], button.l, button.t, 30, 30);

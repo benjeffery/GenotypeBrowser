@@ -84,6 +84,7 @@
           if (that.view.scroll_pos < that.max_scroll())
             that.view.scroll_pos = that.max_scroll();
         }
+        that.needUpdate = 'dragMove';
         that.last_view_change = that.drag;
       };
       that.click = function (ev) {
@@ -93,6 +94,7 @@
       };
       that.dragEnd = function (ev) {
         that.drag = null;
+        that.needUpdate = 'dragEnd';
       };
       that.clickSNP = function (snp_index) {
         if (_.contains(that.view.selected_snps,snp_index)) {
@@ -127,6 +129,7 @@
           .attr('height', that.height());
         that.view.genome_scale.range([ 0, v.gene_map.bounding_box.r - v.gene_map.bounding_box.l - 20]);
         that.view.snp_scale.range([ 0, v.stack.bounding_box.r - v.stack.bounding_box.l - 40]);
+        that.needUpdate = 'resize';
         that.tick();
       };
 
@@ -268,6 +271,7 @@
           add_func(nest, 0);
         });
         that.data.sample_and_label_list = sample_and_label_list;
+        that.needUpdate = 'sortSamples';
       };
 
       that.set_gene = function (gene_info) {
@@ -403,17 +407,45 @@
         that.view.start_snp =  Math.max(0, Math.floor(snp_scale[0] - extra_width));
         that.view.end_snp = Math.min(that.data.snp_cache.snp_positions.length, Math.ceil(snp_scale[1] + extra_width));
         that.throttledUpdateSNPs();
-        var ctx;
+        var ctx = that.canvas.get(0).getContext('2d');
         var tweens = tween.getAll().length;
         tween.update();
+
         if (tweens || that.needUpdate) {
           //Clear by change of size
           that.canvas.attr('width', that.width());
-          ctx = that.canvas.get(0).getContext('2d');
           that.components.forEach(function (component) {
             that.view[component].draw(ctx, that.view, that.data);
           });
+          that.needUpdate = false;
         }
+        //Loading indicator
+        that.load_indicator || (that.load_indicator = 0);
+        that.load_indicator += (!!that.data.snp_cache.current_provider_requests*0.02);
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#FFF';
+        ctx.lineWidth = 1;
+        ctx.fillRect(0,0,101,21);
+        ctx.beginPath();
+        ctx.moveTo(0, 10+(10*Math.sin(that.load_indicator)));
+        for(var i = 0; i <= 100; i += 4) {
+          ctx.lineTo(i, 10+(10*Math.sin(((i*Math.PI*4)/100)+that.load_indicator)));
+        }
+        ctx.moveTo(0, 10+(10*Math.cos(that.load_indicator)));
+        for(i = 0; i <= 100; i += 4) {
+          ctx.lineTo(i, 10+(10*Math.cos(((i*Math.PI*4)/100)+that.load_indicator)));
+        }
+        for(i = 0; i <= 100; i += 10) {
+          ctx.moveTo(i, 10+(10*Math.cos(((i*Math.PI*4)/100)+that.load_indicator)));
+          ctx.lineTo(i, 10+(10*Math.sin(((i*Math.PI*4)/100)+that.load_indicator)));
+        }
+        ctx.stroke();
+        ctx.strokeStyle = '#F00';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(30, 10+(10*Math.cos(((30*Math.PI*4)/100)+that.load_indicator)));
+        ctx.lineTo(30, 10+(10*Math.sin(((30*Math.PI*4)/100)+that.load_indicator)));
+        ctx.stroke();
       };
 
       //Mouse and Touch events
