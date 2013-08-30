@@ -4,7 +4,7 @@
   "Views/GenotypeViewer/RowHeader", "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
   "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
   "Views/GenotypeViewer/IntervalCache", "Views/GenotypeViewer/SNPCache", "Views/GenotypeViewer/CanvasStack",
-  "Views/GenotypeViewer/LDMap"],
+  "Views/GenotypeViewer/IncompatibleSNPs"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
             SVG,
             FramePanel, MetaData, ColumnHeader,
@@ -16,6 +16,10 @@
       that.providers = providers;
       //Rescale the SNPs based on a genomic range
       that.rescaleGenomic = function (target) {
+        if (!target) {
+          target= {left:that.view.genome_scale.domain()[0],
+            right:that.view.genome_scale.domain()[1]};
+        }
         var left = that.data.snp_cache.posToIndex(target.left);
         var right = that.data.snp_cache.posToIndex(target.right);
         if (_.isEqual(that.view.snp_scale.domain(), [0,0])) {
@@ -80,7 +84,6 @@
           if (that.view.scroll_pos < that.max_scroll())
             that.view.scroll_pos = that.max_scroll();
         }
-        that.needUpdate = "dragMove";
         that.last_view_change = that.drag;
       };
       that.click = function (ev) {
@@ -90,7 +93,6 @@
       };
       that.dragEnd = function (ev) {
         that.drag = null;
-        that.needUpdate = "dragEnd";
       };
       that.clickSNP = function (snp_index) {
         if (_.contains(that.view.selected_snps,snp_index)) {
@@ -125,7 +127,6 @@
           .attr('height', that.height());
         that.view.genome_scale.range([ 0, v.gene_map.bounding_box.r - v.gene_map.bounding_box.l - 20]);
         that.view.snp_scale.range([ 0, v.stack.bounding_box.r - v.stack.bounding_box.l - 40]);
-        that.needUpdate = "resize";
         that.tick();
       };
 
@@ -207,14 +208,15 @@
               },
               comparator: d3.descending,
               display_name: DQX.return_arg(0)
-            }
+            },
             //Commented out on request of DK
-            //                    {
-            //                        key: function (sample) {
-            //                            return sample.SampleContext.Site.Name;
-            //                        },
-            //                        comparator: d3.descending
-            //                    }
+            {
+                key: function (sample) {
+                    return sample.SampleContext.Site.Name;
+                },
+                comparator: d3.descending,
+                display_name: DQX.return_arg(0)
+            }
 
           ];
           that.sample_leaf_sort = DQX.comp_attr('ID', d3.descending);
@@ -266,7 +268,6 @@
           add_func(nest, 0);
         });
         that.data.sample_and_label_list = sample_and_label_list;
-        that.needUpdate = "sortSamples";
       };
 
       that.set_gene = function (gene_info) {
@@ -288,6 +289,10 @@
       that.newData = _.throttle(function() {
         that.updateSNPs(true);
       },1000);
+
+      that.newPositions = function() {
+        that.rescaleGenomic();
+      };
 
       that.newAnnotations = function() {
         var genome_scale = that.view.genome_scale.domain();
@@ -392,7 +397,6 @@
       };
       that.throttledUpdateSNPs = _.throttle(that.updateSNPs, 250);
 
-      var led = false;
       that.tick = function (event) {
         var snp_scale = that.view.snp_scale.domain();
         var extra_width = (snp_scale[1] - snp_scale[0]) * 0.2;
@@ -400,7 +404,6 @@
         that.view.end_snp = Math.min(that.data.snp_cache.snp_positions.length, Math.ceil(snp_scale[1] + extra_width));
         that.throttledUpdateSNPs();
         var ctx;
-        var updated = false;
         var tweens = tween.getAll().length;
         tween.update();
         if (tweens || that.needUpdate) {
@@ -410,14 +413,7 @@
           that.components.forEach(function (component) {
             that.view[component].draw(ctx, that.view, that.data);
           });
-          updated = that.needUpdate || "TWEEN";
-          that.needUpdate = false;
         }
-        led = !led;
-        ctx = that.canvas.get(0).getContext('2d');
-        ctx.fillStyle = led ? (updated ? "#F00":"#0F0") : "#000";
-        ctx.fillRect(0,0,10,10);
-        if (updated) ctx.fillText(updated,5,10)
       };
 
       //Mouse and Touch events
@@ -452,7 +448,7 @@
       };
       var locator = DQX.attr('start');
       that.data.annotation_cache = IntervalCache(that.providers.annotation, locator, null, that.newAnnotations);
-      that.data.snp_cache = SNPCache(providers, that.newData, []);
+      that.data.snp_cache = SNPCache(providers, that.newData, that.newPositions, []);
 
       //View parameters
       that.view = {
@@ -460,7 +456,7 @@
         gene_map: GeneMap({}, that.clickSNP),
         stack: CanvasStack({}, [
           Genotypes(),
-          LDMap()
+          //LDMap()
         ]),
         row_header: RowHeader({}),
         controls: Controls({}, {

@@ -1,6 +1,6 @@
 define(["lodash", "d3", "MetaData", "DQX/SVG"],
   function (_, d3, MetaData, SVG) {
-    return function SNPCache(providers, update_callback, samples) {
+    return function SNPCache(providers, update_callback, position_update_callback, samples) {
 
 
       var UNFETCHED = 0;
@@ -12,6 +12,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
       that.genotype_provider = providers.genotype;
       that.position_provider = providers.position;
       that.update_callback = update_callback;
+      that.position_update_callback = position_update_callback;
 
       that.samples = samples;
       that.snp_positions_by_chrom = {};
@@ -57,6 +58,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
         if (that.snp_positions.length == 0 && !that.fetching_positions) {
           //Request the snp index
           that.fetching_positions = true;
+          that.current_provider_requests += 1;
           that.position_provider(chrom, function(positions) {
             if (positions) {
               that.snp_positions_by_chrom[chrom] = positions;
@@ -69,6 +71,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
               that.fetching_positions = false;
               //Call again to set the data to the chrom again as we changed it and get an update_callback run.
               that.set_chrom(chrom);
+              that.position_update_callback();
               console.log('Positions loaded '+ chrom);
             }
             else {
@@ -76,6 +79,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
               that.fetching_positions = false;
               that.snp_positions_by_chrom[chrom] = [];
             }
+            that.current_provider_requests -= 1;
           })
         }
         that.update_callback();
@@ -121,7 +125,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
 
           that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = {});
           var snps = that.snps_by_chrom[chrom];
-
+          var snp_cols = {r:[], g:[], b:[]};
           that.genotypes_by_chrom[chrom] || (that.genotypes_by_chrom[chrom] = []);
           var genotypes = that.genotypes_by_chrom[chrom];
 
@@ -155,8 +159,8 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
               var col = SVG.genotype_rgb(sample_gt.ref[i], sample_gt.alt[i]);
               _(['r','g','b']).forEach(function (c) {
                 sample_gt[c][i] = col[c];
-                snps[c][i] += col[c];
-                console.log(col[c], snps[c][i]);
+                snp_cols[c][i] || (snp_cols[c][i] = 0);
+                snp_cols[c][i] += col[c];
               });
               //SET THE GENOTYPE AS IT DOES NOT COME FROM THE VCF
               sample_gt.gt[i] = sample_gt.alt[i] >= sample_gt.ref[i] ? (sample_gt.alt[i] >= 5 ? 1 : 0) : 0;
@@ -164,28 +168,8 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
           });
           _(['r','g','b']).forEach(function (c) {
             for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++)
-              snps[c][i] /= num_samples;
+              snps[c][i] = snp_cols[c][i]/num_samples;
           });
-
-//      //Set colours for the snps
-//      var len = samples.length;
-//      snps.forEach(function (snp, i) {
-//        snp.col = {r: 0, g: 0, b: 0};
-//        snp.genotypes.forEach(function (genotype, i) {
-//          var col = SVG.genotype_rgb(genotype.ref, genotype.alt);
-//          genotype.pixel = [col.r, col.g, col.b];
-//          var col_snp = snp.col;
-//          col_snp.r += col.r;
-//          col_snp.g += col.g;
-//          col_snp.b += col.b;
-//        });
-//        snp.col.r /= len;
-//        snp.col.g /= len;
-//        snp.col.b /= len;
-//        snp.rgb = snp.col;
-//        snp.col = DQX.getRGB(snp.col.r, snp.col.g, snp.col.b, 0.75)
-//
-
 
         } else {
           console.log("no data on genotype call");
