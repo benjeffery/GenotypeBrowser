@@ -420,32 +420,34 @@
           that.needUpdate = false;
         }
         //Loading indicator
-        that.load_indicator || (that.load_indicator = 0);
-        that.load_indicator += (!!that.data.snp_cache.current_provider_requests*0.02);
-        ctx.strokeStyle = '#000';
-        ctx.fillStyle = '#FFF';
-        ctx.lineWidth = 1;
-        ctx.fillRect(0,0,101,21);
-        ctx.beginPath();
-        ctx.moveTo(0, 10+(10*Math.sin(that.load_indicator)));
-        for(var i = 0; i <= 100; i += 4) {
-          ctx.lineTo(i, 10+(10*Math.sin(((i*Math.PI*4)/100)+that.load_indicator)));
+        if (!!that.data.snp_cache.current_provider_requests) {
+          that.load_indicator || (that.load_indicator = 0);
+          that.load_indicator += (!!that.data.snp_cache.current_provider_requests*0.2);
+          ctx.strokeStyle = '#000';
+          ctx.fillStyle = '#FFF';
+          ctx.lineWidth = 1;
+          ctx.fillRect(0,0,101,21);
+          ctx.beginPath();
+          ctx.moveTo(0, 10+(10*Math.sin(that.load_indicator)));
+          for(var i = 0; i <= 100; i += 4) {
+            ctx.lineTo(i, 10+(10*Math.sin(((i*Math.PI*4)/100)+that.load_indicator)));
+          }
+          ctx.moveTo(0, 10+(10*Math.cos(that.load_indicator)));
+          for(i = 0; i <= 100; i += 4) {
+            ctx.lineTo(i, 10+(10*Math.cos(((i*Math.PI*4)/100)+that.load_indicator)));
+          }
+          for(i = 0; i <= 100; i += 10) {
+            ctx.moveTo(i, 10+(10*Math.cos(((i*Math.PI*4)/100)+that.load_indicator)));
+            ctx.lineTo(i, 10+(10*Math.sin(((i*Math.PI*4)/100)+that.load_indicator)));
+          }
+          ctx.stroke();
+          ctx.strokeStyle = '#F00';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(30, 10+(10*Math.cos(((30*Math.PI*4)/100)+that.load_indicator)));
+          ctx.lineTo(30, 10+(10*Math.sin(((30*Math.PI*4)/100)+that.load_indicator)));
+          ctx.stroke();
         }
-        ctx.moveTo(0, 10+(10*Math.cos(that.load_indicator)));
-        for(i = 0; i <= 100; i += 4) {
-          ctx.lineTo(i, 10+(10*Math.cos(((i*Math.PI*4)/100)+that.load_indicator)));
-        }
-        for(i = 0; i <= 100; i += 10) {
-          ctx.moveTo(i, 10+(10*Math.cos(((i*Math.PI*4)/100)+that.load_indicator)));
-          ctx.lineTo(i, 10+(10*Math.sin(((i*Math.PI*4)/100)+that.load_indicator)));
-        }
-        ctx.stroke();
-        ctx.strokeStyle = '#F00';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(30, 10+(10*Math.cos(((30*Math.PI*4)/100)+that.load_indicator)));
-        ctx.lineTo(30, 10+(10*Math.sin(((30*Math.PI*4)/100)+that.load_indicator)));
-        ctx.stroke();
       };
 
       //Mouse and Touch events

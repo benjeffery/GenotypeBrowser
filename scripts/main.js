@@ -35,10 +35,10 @@ require.config({
 });
 
 require(["jquery", "DQX/Application", "DQX/Framework", "DQX/Msg", "DQX/HistoryManager", "DQX/Utils", "PrefetchData", "Views/Intro", "Views/SampleBrowser"],
-    function ($, Application, Framework, Msg, HistoryManager, DQX, PrefetchData, Intro, GenomeBrowser) {
+    function ($, Application, Framework, Msg, HistoryManager, DQX, PrefetchData, Intro, SampleBrowser) {
         $(function () {
             Intro.init();
-            GenomeBrowser.init();
+            SampleBrowser.init();
             Application.setHeader('Application Header');
             //Provide a hook to fetch some data upfront from the server. Upon completion, 'proceedFunction' should be called;
             Application.customInitFunction = function(proceedFunction) {

@@ -63,8 +63,8 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
             if (positions) {
               that.snp_positions_by_chrom[chrom] = positions;
               that.fetch_state_by_chrom[chrom] = new Uint8Array(Math.ceil(positions.length / CHUNK_SIZE));
-              that.snps_by_chrom[chrom].alt = new Uint8Array(positions.length);
-              that.snps_by_chrom[chrom].ref = new Uint8Array(positions.length);
+              that.snps_by_chrom[chrom].alt = new Uint16Array(positions.length);
+              that.snps_by_chrom[chrom].ref = new Uint16Array(positions.length);
               that.snps_by_chrom[chrom].r = new Uint8Array(positions.length);
               that.snps_by_chrom[chrom].g = new Uint8Array(positions.length);
               that.snps_by_chrom[chrom].b = new Uint8Array(positions.length);
@@ -109,7 +109,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
           return _(that.snp_positions).last();
       };
 
-      that._insert_received_data = function (chunk, samples, data) {
+      that._insert_received_data = function (chunk, samples, buffer) {
         if (samples && !_.isEqual(samples, that.samples)) return;
         var chrom = chunk.chrom;
         chunk = chunk.chunk;
@@ -118,7 +118,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
           console.log("Got data for chunk that was not fetching", chunk);
           return;
         }
-        if (data) {
+        if (buffer) {
           that.fetch_state_by_chrom[chrom][chunk] = FETCHED;
           var num_snps = that.snp_positions_by_chrom[chrom].length;
           var num_samples = that.samples.length;
@@ -126,6 +126,11 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
           that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = {});
           var snps = that.snps_by_chrom[chrom];
           var snp_cols = {r:[], g:[], b:[]};
+          for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++) {
+            snp_cols.r[i] = 0;
+            snp_cols.g[i] = 0;
+            snp_cols.b[i] = 0;
+          }
           that.genotypes_by_chrom[chrom] || (that.genotypes_by_chrom[chrom] = []);
           var genotypes = that.genotypes_by_chrom[chrom];
 
@@ -133,19 +138,21 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
             genotypes[i] || (genotypes[i] = {});
             var sample_gt = genotypes[i];
             sample_gt || (sample_gt = {});
-            sample_gt.alt || (sample_gt.alt = new Uint8Array(num_snps));
-            sample_gt.ref || (sample_gt.ref = new Uint8Array(num_snps));
+            sample_gt.alt || (sample_gt.alt = new Uint16Array(num_snps));
+            sample_gt.ref || (sample_gt.ref = new Uint16Array(num_snps));
             sample_gt.r || (sample_gt.r = new Uint8Array(num_snps));
             sample_gt.g || (sample_gt.g = new Uint8Array(num_snps));
             sample_gt.b || (sample_gt.b = new Uint8Array(num_snps));
             sample_gt.gt || (sample_gt.gt = new Uint8Array(num_snps));
           });
-          data = new Uint8Array(data);
+          var data = new Uint8Array(buffer);
           var d = 0;
-          for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
+          for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
             snps.ref[i] = data[d];
           for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
             snps.alt[i] = data[d];
+          data = new Uint16Array(buffer, d);
+          d = 0;
           _(that.samples).forEach(function (sample,j) {
             var sample_gt = genotypes[j];
             //COMMENTED OUT AS OUR VCFs HAVE NO GENOTYPES!!!
@@ -157,20 +164,19 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
               sample_gt.alt[i] = data[d];
             for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++) {
               var col = SVG.genotype_rgb(sample_gt.ref[i], sample_gt.alt[i]);
-              _(['r','g','b']).forEach(function (c) {
-                sample_gt[c][i] = col[c];
-                snp_cols[c][i] || (snp_cols[c][i] = 0);
-                snp_cols[c][i] += col[c];
-              });
+              sample_gt.r[i] = col.r;
+              snp_cols.r[i] += col.r;
+              sample_gt.g[i] = col.g;
+              snp_cols.g[i] += col.g;
+              sample_gt.b[i] = col.b;
+              snp_cols.b[i] += col.b;
               //SET THE GENOTYPE AS IT DOES NOT COME FROM THE VCF
               sample_gt.gt[i] = sample_gt.alt[i] >= sample_gt.ref[i] ? (sample_gt.alt[i] >= 5 ? 1 : 0) : 0;
             }
           });
-          _(['r','g','b']).forEach(function (c) {
-            for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++)
-              snps[c][i] = snp_cols[c][i]/num_samples;
-          });
-
+          snps.r[i] = snp_cols.r[i]/num_samples;
+          snps.g[i] = snp_cols.g[i]/num_samples;
+          snps.b[i] = snp_cols.b[i]/num_samples;
         } else {
           console.log("no data on genotype call");
           that.fetch_state_by_chrom[chrom][chunk] = UNFETCHED;
@@ -200,6 +206,7 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
       };
 
       that._process_provider_queue = function () {
+        console.log(that.current_provider_requests);
         if (that.current_provider_requests < 4 && that.provider_queue.length > 0) {
           var chunk = that.provider_queue.pop();
           var start = chunk.chunk * CHUNK_SIZE;
