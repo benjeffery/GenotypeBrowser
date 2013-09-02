@@ -4,7 +4,7 @@
   "Views/GenotypeViewer/RowHeader", "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
   "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
   "Views/GenotypeViewer/IntervalCache", "Views/GenotypeViewer/SNPCache", "Views/GenotypeViewer/CanvasStack",
-  "Views/GenotypeViewer/IncompatibleSNPs"],
+  "Views/GenotypeViewer/LDMap"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
             SVG,
             FramePanel, MetaData, ColumnHeader,
@@ -490,7 +490,7 @@
         gene_map: GeneMap({}, that.clickSNP),
         stack: CanvasStack({}, [
           Genotypes(),
-          //LDMap()
+     //     LDMap()
         ]),
         row_header: RowHeader({}),
         controls: Controls({}, {

@@ -23,9 +23,9 @@
 
           var frameListsLeft = this.getFrame().addMemberFrame(Framework.FrameGroupVert('', 0.2));
 
-          this.frameSelectSamples = frameListsLeft.addMemberFrame(Framework.FrameFinal('GenotypesSelectSamples', 0.5))
+          this.frameControls = frameListsLeft.addMemberFrame(Framework.FrameFinal('GenotypesSelectSamples', 0.5))
             .setMargins(5).setAllowSmoothScrollY();
-//                    this.frameSelectSamples.InsertIntroBox('Icons/Medium/GenotypeBrowser.png', DQX.Text('IntroGenotypesView'), 'Doc/Genotypes/Help.htm');
+//                    this.frameControls.InsertIntroBox('Icons/Medium/GenotypeBrowser.png', DQX.Text('IntroGenotypesView'), 'Doc/Genotypes/Help.htm');
           this.frameBrowser = this.getFrame().addMemberFrame(Framework.FrameFinal('GenotypesBrowser', 0.8))
             .setMargins(0).setAllowScrollBars(false, false);
 //                    require("Common").addToolGene("GeneBrowseGenoTypes", "Show public genotypes", "Icons/Medium/GenotypeBrowser.png", function (args) {
@@ -89,8 +89,9 @@
 
         that.createPanels = function () {
           this.ctrls = {};
-          this.controlPanel = Framework.Form(this.frameSelectSamples);
+          this.controlPanel = Framework.Form(this.frameControls);
           this.ctrls.textSamples = Controls.Html('SampleBrowserActiveSamples', '<i><b>No samples</b></i>');
+          this.controlPanel.addControl(this.ctrls.textSamples);
           var table = Controls.CompoundGrid();
           table.setItem(0,0,Controls.Button("SampleBrowserSelectSamples", {
                   buttonClass: 'DQXToolButton1',
@@ -98,19 +99,14 @@
                   height: 28,
                   content: '<img class="DQXFLeft" height=28px src="Bitmaps/study2.png"><div class="DQXFLeft">Select<br>samples</div>' }))
               .setOnChanged($.proxy(this.promptSamples, this));
-          table.setItem(0,1,this.ctrls.textSamples);
-          table.setItem(1, 0, Controls.Button("SampleBrowserSelectGene", {
+          table.setItem(0, 1, Controls.Button("SampleBrowserSelectGene", {
               width: 80,
               height: 31,
               buttonClass: 'DQXToolButton1',
               bitmap: "Bitmaps/dna3.png",
-              content: 'Select gene' }))
+              content: 'Go to gene' }))
             .setOnChanged($.proxy(this.promptGene, this));
-          this.ctrls.textGene = Controls.Html('SampleBrowserActiveGene', '<i><b>No gene</b></i>');
-          table.setItem(1, 1, this.ctrls.textGene);
           this.controlPanel.addControl(table);
-          this.ctrls.activeGene = Controls.Html('SampleBrowserQueryGeneActiveGene', '');
-          this.controlPanel.addControl(this.ctrls.activeGene);
 
           var compress = Controls.Check('Compress', {label: 'Compress', value: false});
           this.controlPanel.addControl(compress);
@@ -165,23 +161,12 @@
         };
 
         that.handleShowGeneInfo = function (data) {
-          var content = "<b><i>" + data.fid + "</i></b>";
-          content += "<br>" + data.chromid + ":" + data.fstart + "-" + data.fstop;
           this.geneinfo = {
             geneid: data.fid,
             chromid: data.chromid,
             start: parseInt(data.fstart),
             stop: parseInt(data.fstop)
-          }
-          //content += Common.GeneData2InfoTable(data);
-          //content += Common.generateToolButtonsGene('GeneBrowseGenoTypes', function (handler) { handler(that.geneinfo); });
-          this.ctrls.textGene.modifyValue(content);
-          content = Common.GeneData2InfoTable(data);
-          content += Common.generateToolButtonsGene('GeneBrowseGenoTypes', function (handler) {
-            handler(that.geneinfo);
-          });
-          this.ctrls.activeGene.modifyValue(content);
-
+          };
           this.genotypeViewer.set_gene(this.geneinfo);
         };
 
