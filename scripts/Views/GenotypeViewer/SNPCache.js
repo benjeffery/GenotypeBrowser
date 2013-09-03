@@ -30,6 +30,32 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
       that.current_provider_requests = 0;
       that.fetching_positions = false;
 
+      that.colour_table = [];
+      that.colour_table_r = new Uint8Array(256);
+      that.colour_table_g = new Uint8Array(256);
+      that.colour_table_b = new Uint8Array(256);
+
+      for (var l = 0; l < 16; ++l)
+        for (var h = 0; h < 16; ++h) {
+          var col = SVG.hsl_to_rgb(
+            Math.round(240 + ((h/16) * 120)),
+            100,
+            Math.round(100 - ((l/16)*50)));
+          that.colour_table[l + (16 * h)] = DQX.getRGB(col.r, col.g, col.b);
+          that.colour_table_r[l + (16 * h)] = col.r;
+          that.colour_table_g[l + (16 * h)] = col.g;
+          that.colour_table_b[l + (16 * h)] = col.b;
+        }
+
+      that.snp_col_index = function(ref, alt) {
+        var tot = ref + alt;
+        var light_index = Math.floor((Math.min(tot, 10) / 10) * 15);
+        var hue_index = tot > 0 ? Math.floor((alt/tot) * 15) : 0;
+        return light_index + 16 * hue_index;
+      };
+
+
+
       that.set_samples = function(samples) {
         //Clear out everything
         that.samples = samples;
@@ -65,9 +91,8 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
               that.fetch_state_by_chrom[chrom] = new Uint8Array(Math.ceil(positions.length / CHUNK_SIZE));
               that.snps_by_chrom[chrom].alt = new Uint16Array(positions.length);
               that.snps_by_chrom[chrom].ref = new Uint16Array(positions.length);
-              that.snps_by_chrom[chrom].r = new Uint8Array(positions.length);
-              that.snps_by_chrom[chrom].g = new Uint8Array(positions.length);
-              that.snps_by_chrom[chrom].b = new Uint8Array(positions.length);
+              that.snps_by_chrom[chrom].alt_total = new Uint32Array(positions.length);
+              that.snps_by_chrom[chrom].ref_total = new Uint32Array(positions.length);
               that.fetching_positions = false;
               //Call again to set the data to the chrom again as we changed it and get an update_callback run.
               that.set_chrom(chrom);
@@ -122,15 +147,8 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
           that.fetch_state_by_chrom[chrom][chunk] = FETCHED;
           var num_snps = that.snp_positions_by_chrom[chrom].length;
           var num_samples = that.samples.length;
-
           that.snps_by_chrom[chrom] || (that.snps_by_chrom[chrom] = {});
           var snps = that.snps_by_chrom[chrom];
-          var snp_cols = {r:[], g:[], b:[]};
-          for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++) {
-            snp_cols.r[i] = 0;
-            snp_cols.g[i] = 0;
-            snp_cols.b[i] = 0;
-          }
           that.genotypes_by_chrom[chrom] || (that.genotypes_by_chrom[chrom] = []);
           var genotypes = that.genotypes_by_chrom[chrom];
 
@@ -140,14 +158,12 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
             sample_gt || (sample_gt = {});
             sample_gt.alt || (sample_gt.alt = new Uint16Array(num_snps));
             sample_gt.ref || (sample_gt.ref = new Uint16Array(num_snps));
-            sample_gt.r || (sample_gt.r = new Uint8Array(num_snps));
-            sample_gt.g || (sample_gt.g = new Uint8Array(num_snps));
-            sample_gt.b || (sample_gt.b = new Uint8Array(num_snps));
+            sample_gt.col || (sample_gt.col = new Uint8Array(num_snps));
             sample_gt.gt || (sample_gt.gt = new Uint8Array(num_snps));
           });
           var data = new Uint8Array(buffer);
           var d = 0;
-          for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
+          for (var i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
             snps.ref[i] = data[d];
           for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
             snps.alt[i] = data[d];
@@ -163,20 +179,17 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
             for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++, d++)
               sample_gt.alt[i] = data[d];
             for (i = start_index, ref = start_index+CHUNK_SIZE; i < ref; i++) {
-              var col = SVG.genotype_rgb(sample_gt.ref[i], sample_gt.alt[i]);
-              sample_gt.r[i] = col.r;
-              snp_cols.r[i] += col.r;
-              sample_gt.g[i] = col.g;
-              snp_cols.g[i] += col.g;
-              sample_gt.b[i] = col.b;
-              snp_cols.b[i] += col.b;
+              var r = sample_gt.ref[i];
+              var a = sample_gt.alt[i];
+              var tot = r + a;
+              //Inline of that.snp_col_index.... firefox is slow at function calls.
+              sample_gt.col[i] =  Math.floor((Math.min(tot, 10) / 10) * 15) + 16 * (tot > 0 ? Math.floor((a/tot) * 15) : 0);
+              snps.ref_total[i] += r;
+              snps.alt_total[i] += a;
               //SET THE GENOTYPE AS IT DOES NOT COME FROM THE VCF
-              sample_gt.gt[i] = sample_gt.alt[i] >= sample_gt.ref[i] ? (sample_gt.alt[i] >= 5 ? 1 : 0) : 0;
+              sample_gt.gt[i] = a >= r ? (a >= 5 ? 1 : 0) : 0;
             }
           });
-          snps.r[i] = snp_cols.r[i]/num_samples;
-          snps.g[i] = snp_cols.g[i]/num_samples;
-          snps.b[i] = snp_cols.b[i]/num_samples;
         } else {
           console.log("no data on genotype call");
           that.fetch_state_by_chrom[chrom][chunk] = UNFETCHED;

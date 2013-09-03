@@ -21,24 +21,28 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
         //Little hat and area fill
         if (alpha > 0) {
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, 0.5 * alpha);
+          var col_index = data.snp_cache.colour_table;
+          var get_col_index = data.snp_cache.snp_col_index;
           for (var i = view.start_snp, end = view.end_snp; i < end; ++i) {
+            var selected = _.contains(view.selected_snps, i);
+            var colour = col_index[get_col_index(snps.ref_total[i],snps.alt_total[i])];
             ctx.beginPath();
             ctx.moveTo(scale(i), 20);
             ctx.bezierCurveTo(scale(i), 10, scale(i + 0.5), 10, scale(i + 0.5), 0);
             ctx.bezierCurveTo(scale(i + 0.5), 10, scale(i + 1), 10, scale(i + 1), 20);
             ctx.closePath();
-            ctx.fillStyle = DQX.getRGB(snps.r[i], snps.g[i], snps.b[i], alpha);
-            ctx.lineWidth = snp.selected ? 2 : 1;
+            ctx.fillStyle = colour;
+            ctx.lineWidth = selected ? 2 : 1;
             ctx.fill();
             ctx.stroke();
-            if (_.contains(view.selected_snps, i)) {
+            if (selected) {
               ctx.beginPath();
               ctx.moveTo(scale(i), 20);
               ctx.lineTo(scale(i + 1), 20);
               ctx.lineTo(scale(i + 1), that.height());
               ctx.lineTo(scale(i), that.height());
               ctx.closePath();
-              ctx.fillStyle = snp.col;
+              ctx.fillStyle = colour;
               ctx.fill();
             }
           }
@@ -83,7 +87,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
               ctx.fillText(asc(snps.ref[i]) + '→' + asc(snps.alt[i]), x, y + offset + 15);
             }
             if (offset <= -12) {
-              if (snp_selected) ctx.strokeText(snp[i], x, y + offset + 30);
+              if (snp_selected) ctx.strokeText(pos[i], x, y + offset + 30);
               ctx.fillText(pos[i], x, y + offset + 30);
             }
             ctx.restore()

@@ -7,7 +7,7 @@
     var SampleBrowserModule = {
       init: function () {
         var that = Application.View(
-          'browser',
+          'start',
           'Genotype Browser'
         );
         that.annotation_fetcher = new DataFetcherAnnotation.Fetcher({

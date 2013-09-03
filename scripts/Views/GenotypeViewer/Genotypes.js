@@ -10,15 +10,14 @@ define(["tween", "DQX/Utils"],
         var y_off = view.scroll_pos;
         var row_height = Math.ceil(view.row_height);
         var genotypes = data.snp_cache.genotypes;
+        var col_table = data.snp_cache.colour_table;
         if (!genotypes) return that;
         //Genotype squares
           if (snp_width > 3) {
             data.samples.forEach(function (sample, s) {
-              var r = genotypes[s].r;
-              var g = genotypes[s].g;
-              var b = genotypes[s].b;
+              var col = genotypes[s].col;
               for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
-                  ctx.fillStyle = DQX.getRGB(r[i], g[i], b[i]);
+                  ctx.fillStyle = col_table[col[i]];
                   ctx.fillRect(x_scale(i)-(snp_width*0.001), sample.vert + y_off, snp_width+(snp_width*1.002), row_height);
                   //var height = Math.min(row_height,row_height*((snp.ref+snp.alt)/100))
                   //ctx.fillRect(x_scale(snp.snp_index), sample.vert + y_off + (row_height-height)/2, snp_width, height);

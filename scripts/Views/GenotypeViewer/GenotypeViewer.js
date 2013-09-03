@@ -341,6 +341,9 @@
           view.cache_pixel_width = width;
           console.time('draw');
           var genotypes = that.data.snp_cache.genotypes;
+          var r = that.data.snp_cache.colour_table_r;
+          var g = that.data.snp_cache.colour_table_g;
+          var b = that.data.snp_cache.colour_table_b;
           that.data.samples.forEach(function(sample, s) {
             //We want a canvas that is the next multiple of the number of snps
             sample.genotypes_canvas.width = width;
@@ -349,15 +352,14 @@
               var image_data = ctx.createImageData(width, 1);
               var data = image_data.data;
               var p = 0;
-              var r = genotypes[s].r;
-              var g = genotypes[s].g;
-              var b = genotypes[s].b;
+              var col = genotypes[s].col;
               var gt = genotypes[s].gt;
               //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
               for(var j=view.cache_start_snp, ref = view.cache_end_snp; j < ref; j+= snps_per_pixel) {
-                data[4*p] = r[j];
-                data[4*p+1] = g[j];
-                data[4*p+2] = b[j];
+                var c = col[j];
+                data[4*p] = r[c];
+                data[4*p+1] = g[c];
+                data[4*p+2] = b[c];
                 data[4*p+3] = 255;
                 p++;
 //                var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;

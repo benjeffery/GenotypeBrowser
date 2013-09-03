@@ -98,7 +98,7 @@ define([],
                 that.callbacks.click(ev)
             };
 
-            that.element.bind('DOMmouseScroll mousewheel', function(ev) {
+            that.element.bind('DOMMouseScroll mousewheel', function(ev) {
                 that.forceTouches(ev);
                 that.callbacks.mouseWheel(ev);
             });
