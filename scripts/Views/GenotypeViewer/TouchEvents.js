@@ -1,5 +1,5 @@
-define([],
-    function () {
+define(["lodash"],
+    function (_) {
         return function TouchEvents(element, callbacks) {
             var that = {};
             that.element = element;
@@ -43,6 +43,7 @@ define([],
                 ev.center = that.getCenter(ev.touches);
             };
             that.touchStart = function(ev) {
+                ev = _.cloneDeep(ev);
                 that.forceTouches(ev);
                 that.touchStartEv = ev;
                 $(document).bind("touchend.Genotypes mouseup.Genotypes", that.touchEnd);
@@ -51,6 +52,7 @@ define([],
                 return false;
             };
             that.touchEnd = function(ev) {
+                ev = _.cloneDeep(ev);
                 if (that.touchStartEv) {
                     if (that.touchDragging) {
                         that.touchDragging = false;
@@ -68,6 +70,7 @@ define([],
                 return false;
             };
             that.touchMove = function(ev) {
+                ev = _.cloneDeep(ev);
                 that.forceTouches(ev);
                 if (!that.touchStartEv) {
                     that.touchStartEv = ev;

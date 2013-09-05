@@ -4,7 +4,7 @@
   "Views/GenotypeViewer/RowHeader", "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
   "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
   "Views/GenotypeViewer/IntervalCache", "Views/GenotypeViewer/SNPCache", "Views/GenotypeViewer/CanvasStack",
-  "Views/GenotypeViewer/LDMap"],
+  "Views/GenotypeViewer/Flow"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
             SVG,
             FramePanel, MetaData, ColumnHeader,
@@ -184,7 +184,7 @@
 //                        }
 //                    }
 //                    add(c);
-          that.sample_heirachy = [
+          that.view.sample_heirachy = [
             {
               key: function (sample) {
                 return sample.selected_haplotype;
@@ -195,9 +195,9 @@
               }
             },
           ]
-          that.sample_leaf_sort = function(a,b) {return d3.descending(a.selected_haplotype+ a.ID, b.selected_haplotype+ b.ID);};
+          that.sample_leaf_sort = function(a,b) {return d3.descending(a.selected_haplotype+ a.SampleContext.Site.Name, b.selected_haplotype+ b.SampleContext.Site.Name);};
         } else {
-          that.sample_heirachy = [
+          that.view.sample_heirachy = [
             {
               key: function (sample) {
                 return sample.Classifications.subcont[0].Name;
@@ -226,7 +226,7 @@
         }
 
         var nest = d3.nest();
-        that.sample_heirachy.forEach(function (level) {
+        that.view.sample_heirachy.forEach(function (level) {
           nest.key(level.key);
           nest.sortKeys(level.comparator);
         });
@@ -237,7 +237,7 @@
           if (nest.key == undefined)
             nest.key = nest.ID;
           nest.is_sample = (nest.ID != undefined);
-          nest.display_name = nest.is_sample ? nest.ID : depth > 0 ? that.sample_heirachy[depth - 1].display_name(nest.key, nest.values) : 'Samples';
+          nest.display_name = nest.is_sample ? nest.ID : depth > 0 ? that.view.sample_heirachy[depth - 1].display_name(nest.key, nest.values) : 'Samples';
           nest.depth = depth;
           if (!nest.vert)
             nest.vert = vert;
@@ -247,7 +247,7 @@
             .start();
           vert += nest.is_sample ? (that.view.compress ? that.compressed_row_height : that.row_height) : that.row_height;
           that.max_vert = vert;
-          if (depth < that.sample_heirachy.length + 1) {
+          if (depth < that.view.sample_heirachy.length + 1) {
             var count = 0;
             nest.values.forEach(function (sub_nest) {
               count += set_count(sub_nest, depth + 1);
@@ -261,7 +261,7 @@
         var sample_and_label_list = [];
         var add_func = function (nest, depth) {
           sample_and_label_list.push(nest);
-          if (depth < that.sample_heirachy.length) {
+          if (depth < that.view.sample_heirachy.length) {
             nest.values.forEach(function (sub_nest) {
               add_func(sub_nest, depth + 1);
             });
@@ -354,7 +354,7 @@
               var p = 0;
               var col = genotypes[s].col;
               var gt = genotypes[s].gt;
-              //Reduce a set up SNPs to a pixel by averaging the color of alts if any, otherwise refs
+              //Reduce a set up SNPs to a pixel by subsampling
               for(var j=view.cache_start_snp, ref = view.cache_end_snp; j < ref; j+= snps_per_pixel) {
                 var c = col[j];
                 data[4*p] = r[c];
@@ -362,37 +362,6 @@
                 data[4*p+2] = b[c];
                 data[4*p+3] = 255;
                 p++;
-//                var result_pixel_r =0, result_pixel_g=0, result_pixel_b=0;
-//                var num_snps_in_pixel = 0;
-//                var found_alts = false;
-//                //Loop over the snps in this pixel
-//                for (var k = j, ref2 = j+snps_per_pixel, ref3 = view.cache_end_snp; k < ref2 && k < ref3; k++) {
-//                  if (gt[k] == 1)
-//                    if (found_alts) {
-//                      result_pixel_r += r[k];
-//                      result_pixel_g += g[k];
-//                      result_pixel_b += b[k];
-//                      num_snps_in_pixel += 1;
-//                    } else {
-//                      found_alts = true;
-//                      result_pixel_r = r[k];
-//                      result_pixel_g = g[k];
-//                      result_pixel_b = b[k];
-//                      num_snps_in_pixel = 1
-//                    }
-//                  else
-//                    if (!found_alts) {
-//                      result_pixel_r += r[k];
-//                      result_pixel_g += g[k];
-//                      result_pixel_b += b[k];
-//                      num_snps_in_pixel += 1;
-//                    }
-//                }
-//                data[4*p] = result_pixel_r/num_snps_in_pixel;
-//                data[4*p+1] = result_pixel_g/num_snps_in_pixel;
-//                data[4*p+2] = result_pixel_b/num_snps_in_pixel;
-//                data[4*p+3] = 255;
-//                p++;
               }
               ctx.putImageData(image_data,0,0);
             }
@@ -492,7 +461,7 @@
         gene_map: GeneMap({}, that.clickSNP),
         stack: CanvasStack({}, [
           Genotypes(),
-     //     LDMap()
+          LDMap()
         ]),
         row_header: RowHeader({}),
         controls: Controls({}, {
@@ -527,7 +496,7 @@
       
 
       //How to divide the samples
-      that.sample_heirachy = [
+      that.view.sample_heirachy = [
         {
           key: function (sample) {
             return sample.Classifications.subcont[0].Name;

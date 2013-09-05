@@ -24,7 +24,7 @@
           var frameListsLeft = this.getFrame().addMemberFrame(Framework.FrameGroupVert('', 0.2));
 
           this.frameControls = frameListsLeft.addMemberFrame(Framework.FrameFinal('GenotypesSelectSamples', 0.5))
-            .setMargins(5).setAllowSmoothScrollY();
+            .setMargins(5).setAllowSmoothScrollY().setMinSize(Framework.dimX, 250);
 //                    this.frameControls.InsertIntroBox('Icons/Medium/GenotypeBrowser.png', DQX.Text('IntroGenotypesView'), 'Doc/Genotypes/Help.htm');
           this.frameBrowser = this.getFrame().addMemberFrame(Framework.FrameFinal('GenotypesBrowser', 0.8))
             .setMargins(0).setAllowScrollBars(false, false);

@@ -51,11 +51,11 @@ define(["tween", "DQX/Utils"],
 //              ctx.fillStyle = '#F00';//255 - (r2 * 255), 255 - (r2 * 255));
 //              ctx.fillRect(0, ld_sq_width * (j - start_snp), ld_sq_width, ld_sq_width);
 //            }
-            if (!((PA == 1 || PA == 0) && (PB == 1 || PB == 0))) {
+            //if (!((PA == 1 || PA == 0) && (PB == 1 || PB == 0))) {
               //dp = 1-dp;
-              ctx.fillStyle = DQX.getRGB(255, dp*255,dp*255);
+              ctx.fillStyle = DQX.getRGB(255, 225-(dp*255),255-(dp*255));
               ctx.fillRect(0, ld_sq_width * (j - start_snp), ld_sq_width, ld_sq_width);
-            }
+           // }
 
         }
           //Move across to the next row
