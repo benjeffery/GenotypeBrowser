@@ -65,6 +65,7 @@ define(["tween", "DQX/Utils"],
 
 
       };
+      that.event = function(){};
       return that;
     };
   }

@@ -1,30 +1,35 @@
-define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
-  function (tween, DQX, AbsCanvasArea) {
-    return function GeneMap(bounding_box, clickSNPCallback) {
-      var that = AbsCanvasArea(bounding_box);
-      that.clickSNPCallback = clickSNPCallback;
+define(["lodash", "tween", "DQX/Utils"],
+  function (_, tween, DQX) {
+    return function GeneMap(data, view) {
+      var that = {};
+      that.data = data;
+      that.view = view;
       that.colours = [0x800000, 0xFF0000, 0xFFFF00, 0x808000, 0x00FF00,	0x008000,	0x00FFFF,
       0x008080,	0x0000FF,	0x000080,	0xFF00FF, 0x800080];
+      that.last_clip = {l:0, t:0, r:0, b:0};
 
       that.formatSI = function (number) {
         var prefix = d3.formatPrefix(parseFloat(number));
         return prefix.scale(number) + prefix.symbol;
       };
 
-      that._draw = function (ctx, view, data) {
+      that.draw = function (ctx, clip) {
+        var view = that.view;
+        var data = that.data;
+        that.last_clip = clip;
         var scale = view.genome_scale;
         var snp_scale = view.snp_scale;
         var snps = data.snps;
         var positions = data.snp_cache.snp_positions;
         var snp, i, end;
         var snps_length = view.end_snp - view.start_snp;
-        var snp_width = that.width() / snps_length;
+        var snp_width = snp_scale(1) - snp_scale(0);
 
         ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.fillRect(0, 0, that.width(), that.height());
+        ctx.fillRect(clip.l, clip.t, clip.r-clip.l, 100);
 
         //Scale ticks
-        var ticks = scale.ticks(that.width() / 100);
+        var ticks = scale.ticks((scale.range()[1]-scale.range()[0]) / 100);
         ctx.beginPath();
         ticks.forEach(function (tick) {
           ctx.moveTo(scale(tick), 12);
@@ -166,34 +171,39 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
         });
       };
 
-      that._click = function (pos, view, data) {
-        //TODO FIX
-        var snps = data.snps;
-        var canvas = document.createElement('canvas');
-        canvas.width = that.width();
-        canvas.height = that.height();
-        var ctx = canvas.getContext('2d');
-        var scale = view.genome_scale;
-        var divisions = Math.ceil(Math.pow(snps.length + 1, 1 / 3));
-        var multiplier = 255 / (divisions + 1);
-        snps.forEach(function (snp, i) {
-          DQX.polyStar(ctx, scale(snp.pos), 47, 7, 3, 0, -90);
-          var col = DQX.getRGB(multiplier * ((i + 10) % divisions),
-            multiplier * Math.floor(((i + 10) % (divisions * divisions)) / divisions),
-            multiplier * Math.floor(((i + 10)) / (divisions * divisions)));
-          ctx.strokeStyle = col;
-          ctx.fillStyle = col;
-          ctx.fill();
-          ctx.stroke();
-        });
-        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        var index = (pos.x + pos.y * imageData.width) * 4;
-        var snp_index = (imageData.data[index + 0] / multiplier) - 10;
-        snp_index += (imageData.data[index + 1] / multiplier) * divisions;
-        snp_index += (imageData.data[index + 2] / multiplier) * divisions * divisions;
-        if (snp_index >= 0 && snp_index < snps.length && snp_index == Math.round(snp_index))
-          that.clickSNPCallback(snp_index);
+      that.event = function(type, ev, offset) {
+        var pos = ev.center;
+        pos = {x:pos.x - offset.x, y:pos.y - offset.y};
+        var clip = that.last_clip;
+        if (type == "dragStart") {
+          //Check that the event is occuring within our area
+          if (pos.x < clip.l || pos.x > clip.r || pos.y < clip.t || pos.y > 75)
+            return false;
+          that.drag = true;
+          that.view.genome_scale.startDrag(ev.touches);
+          return true;
+        }
+        if (type == "dragMove") {
+          if (that.drag)
+            that.view.rescaleGenomic(that.view.genome_scale.dragMove(ev.touches));
+          //Return false so that other elements get a drag move even if they moved onto us mid-drag
+          return false;
+        }
+        if (type == "dragEnd") {
+          that.drag = false;
+          //Return false so that other elements get a drag end even if they moved onto us mid-drag
+          return false;
+        }
+        if (type == "mouseWheel") {
+          //Check that the event is occurring within our area
+          if (pos.x < clip.l || pos.x > clip.r || pos.y < clip.t || pos.y > 75)
+            return false;
+          var delta = DQX.getMouseWheelDelta(ev);
+          that.view.rescaleGenomic(that.view.genome_scale.scale_clamp(that.view.genome_scale.zoom(delta, pos.x), 0, _.last(data.snp_cache.snp_positions)));
+          return true;
+        }
       };
+
       return that;
     };
   }

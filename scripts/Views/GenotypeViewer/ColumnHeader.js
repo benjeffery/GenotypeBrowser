@@ -1,23 +1,30 @@
-define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
-  function (tween, DQX, AbsCanvasArea) {
-    return function ColumnHeader(bounding_box, clickSNPCallback) {
-      var that = AbsCanvasArea(bounding_box);
+define(["tween", "DQX/Utils"],
+  function (tween, DQX) {
+    return function ColumnHeader(data, view, height, clickSNPCallback) {
+      var that = {};
+      that.data = data;
+      that.view = view;
+      that.height = height;
       that.clickSNPCallback = clickSNPCallback;
+      that.last_clip = {l:0, t:0, r:0, b:0};
 
-      that._draw = function (ctx, view, data) {
+      that.draw = function (ctx, clip) {
+        var data = that.data;
+        var view = that.view;
+        that.last_clip = clip;
         var scale = view.snp_scale;
         var snp_width = scale(1) - scale(0);
         var snps = data.snp_cache.snps;
         var pos = data.snp_cache.snp_positions;
         //Background
-        var g = ctx.createLinearGradient(0, 0, 0, that.height());
+        var g = ctx.createLinearGradient(0, 0, 0, that.height);
         g.addColorStop(0, "rgba(255,255,255,0.85)");
         g.addColorStop(0.75, "rgba(255,255,255,0.85)");
         g.addColorStop(1, "rgba(255,255,255,0)");
         ctx.fillStyle = g;
-        ctx.fillRect(0, 0, that.width(), that.height());
+        ctx.fillRect(clip.l, clip.t, clip.r-clip.l, that.height-clip.t);
 
-        var alpha = tween.manual(snp_width, 5, 10);
+        var alpha = tween.manual(snp_width, 5, 20);
         //Little hat and area fill
         if (alpha > 0) {
           ctx.strokeStyle = DQX.getRGB(0, 0, 0, 0.5 * alpha);
@@ -35,14 +42,24 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
             ctx.lineWidth = selected ? 2 : 1;
             ctx.fill();
             ctx.stroke();
-            if (selected) {
-              ctx.beginPath();
-              ctx.moveTo(scale(i), 20);
-              ctx.lineTo(scale(i + 1), 20);
-              ctx.lineTo(scale(i + 1), that.height());
-              ctx.lineTo(scale(i), that.height());
-              ctx.closePath();
-              ctx.fillStyle = colour;
+            var tot = snps.ref_total[i] + snps.alt_total[i];
+            if (tot > 0) {
+              var a = (that.height-20) * (snps.alt_total[i]/tot);
+              var r = (that.height-20) * (snps.ref_total[i]/tot);
+              ctx.fillStyle = "#F00";
+              ctx.fillRect(scale(i), 20, scale(i+1) - scale(i), a);
+              ctx.fillStyle = "#00F";
+              ctx.fillRect(scale(i), 20+a, scale(i+1) - scale(i), r);
+            }
+            ctx.beginPath();
+            ctx.moveTo(scale(i), 20);
+            ctx.lineTo(scale(i + 1), 20);
+            ctx.lineTo(scale(i + 1), that.height);
+            ctx.lineTo(scale(i), that.height);
+            ctx.closePath();
+            ctx.stroke();
+            if (!selected) {
+              ctx.fillStyle = "rgba(255,255,255,0.75)";
               ctx.fill();
             }
           }
@@ -94,24 +111,32 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/AbsCanvasArea"],
           }
         }
 
-        //Full length lines
-        ctx.lineWidth = 1;
-        alpha = tween.manual(snp_width, 10, 20, e, 0, 0.50);
-        if (alpha > 0) {
-          ctx.strokeStyle = DQX.getRGB(0, 0, 0, alpha);
-          for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
-            ctx.moveTo(scale(i), that.height() + (view.stack.bounding_box.b - view.stack.bounding_box.t));
-            ctx.lineTo(scale(i), 20);
-          }
-          ctx.moveTo(scale(snps.length), that.height() + (view.stack.bounding_box.b - view.stack.bounding_box.t));
-          ctx.lineTo(scale(snps.length), 20);
-          ctx.stroke();
-        }
+//        //Full length lines
+//        ctx.lineWidth = 1;
+//        alpha = tween.manual(snp_width, 10, 20, e, 0, 0.50);
+//        if (alpha > 0) {
+//          ctx.strokeStyle = DQX.getRGB(0, 0, 0, alpha);
+//          for (i = view.start_snp, end = view.end_snp; i < end; ++i) {
+//            ctx.moveTo(scale(i), that.height + (view.stack.bounding_box.b - view.stack.bounding_box.t));
+//            ctx.lineTo(scale(i), 20);
+//          }
+//          ctx.moveTo(scale(snps.length), that.height + (view.stack.bounding_box.b - view.stack.bounding_box.t));
+//          ctx.lineTo(scale(snps.length), 20);
+//          ctx.stroke();
+//        }
       };
 
-      that._click = function (pos, view, data) {
-        var snp = Math.floor(view.snp_scale.invert(pos.x));
-        that.clickSNPCallback(snp);
+      that.event = function(type, ev, offset) {
+        var pos = ev.center;
+        pos = {x:pos.x - offset.x, y:pos.y - offset.y};
+        if (type == 'click') {
+          var clip = that.last_clip;
+          if (pos.x < clip.l || pos.x > clip.r || pos.y < 0 || pos.y > that.height)
+            return false;
+          var snp = Math.floor(view.snp_scale.invert(pos.x));
+          that.clickSNPCallback(snp);
+        }
+        return false
       };
       return that;
     };

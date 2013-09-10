@@ -53,6 +53,7 @@ define(["lodash"],
             };
             that.touchEnd = function(ev) {
                 ev = _.cloneDeep(ev);
+                that.forceTouches(ev);
                 if (that.touchStartEv) {
                     if (that.touchDragging) {
                         that.touchDragging = false;

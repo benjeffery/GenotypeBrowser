@@ -184,10 +184,13 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
               var tot = r + a;
               //Inline of that.snp_col_index.... firefox is slow at function calls.
               sample_gt.col[i] =  Math.floor((Math.min(tot, 10) / 10) * 15) + 16 * (tot > 0 ? Math.floor((a/tot) * 15) : 0);
-              snps.ref_total[i] += r;
-              snps.alt_total[i] += a;
               //SET THE GENOTYPE AS IT DOES NOT COME FROM THE VCF
               sample_gt.gt[i] = a >= r ? (a >= 5 ? 1 : 0) : 0;
+              if (sample_gt.gt[i])
+                snps.alt_total[i] += 1;
+              else
+                snps.ref_total[i] += 1;
+
             }
           });
         } else {
@@ -219,7 +222,6 @@ define(["lodash", "d3", "MetaData", "DQX/SVG"],
       };
 
       that._process_provider_queue = function () {
-        console.log(that.current_provider_requests);
         if (that.current_provider_requests < 4 && that.provider_queue.length > 0) {
           var chunk = that.provider_queue.pop();
           var start = chunk.chunk * CHUNK_SIZE;

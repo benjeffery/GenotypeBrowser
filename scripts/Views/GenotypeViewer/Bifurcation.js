@@ -11,12 +11,12 @@ define(["tween", "DQX/Utils"],
         var middle_snp = Math.floor((end_snp - start_snp)/2)+start_snp;
         var genotypes = data.snp_cache.genotypes;
         if (!genotypes) return;
-        if (snp_width < .2) return;
+        if (snp_width < 1) return;
         var num_samples = data.samples.length;
         console.time('Flow');
         //Just do middle to end for now
         //Make a set of strings that are the haplotypes for each sample
-        var gap = .05;
+        var gap = .02;
         var draw = function (start, end, step) {
           var groups = [{samples: _.range(data.samples.length), top:0, height:300}];
           for (var pos = start; pos != end; pos += step) {
@@ -89,13 +89,11 @@ define(["tween", "DQX/Utils"],
         draw(middle_snp, end_snp, 1);
         draw(middle_snp, start_snp, -1);
 
-
-
-
         console.timeEnd('Flow');
 
-
       };
+
+      that.event = function(){};
       return that;
     };
   }
