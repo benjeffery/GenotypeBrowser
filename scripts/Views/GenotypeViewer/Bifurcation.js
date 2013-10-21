@@ -1,9 +1,16 @@
 define(["tween", "DQX/Utils"],
   function (tween, DQX) {
-    return function Genotypes() {
+    return function Bifurcation(data, view) {
       var that = {};
+      that.data = data;
+      that.view = view;
+      that.last_clip = {l:0, t:0, r:0, b:0};
 
-      that._draw = function (ctx, view, data) {
+
+      that.draw = function (ctx, clip) {
+        var view = that.view;
+        var data = that.data;
+        that.last_clip = clip;
         var x_scale = view.snp_scale;
         var snp_width = x_scale(1) - x_scale(0);
         var start_snp = Math.floor(x_scale.domain()[0]);

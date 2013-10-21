@@ -89,7 +89,7 @@ define(["lodash", "tween", "DQX/Utils"],
         var clip = that.last_clip;
         if (type == "dragStart") {
           //Check that the event is occuring within our area
-          if (pos.x < clip.l || pos.x > clip.r || pos.y < clip.t || pos.y > clip.b)
+          if (pos.x < 0 || pos.x > clip.r || pos.y < 0 || pos.y > clip.b)
             return false;
           that.drag = true;
           that.startDragScrollPos = that.view.scroll_pos;
@@ -118,7 +118,7 @@ define(["lodash", "tween", "DQX/Utils"],
         }
         if (type == "mouseWheel") {
           //Check that the event is occurring within our area
-          if (pos.x < clip.l || pos.x > clip.r || pos.y < clip.t || pos.y > clip.b)
+          if (pos.x < 0 || pos.x > clip.r || pos.y < 0 || pos.y > clip.b)
             return false;
           var delta = DQX.getMouseWheelDelta(ev);
           that.view.rescaleSNPic(that.view.snp_scale.scale_clamp(that.view.snp_scale.zoom(delta, pos.x), 0, that.data.snp_cache.snp_positions.length));

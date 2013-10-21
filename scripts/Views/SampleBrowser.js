@@ -1,7 +1,7 @@
-﻿define(["require", "DQX/Application", "DQX/Framework", "DQX/Msg", "DQX/Utils", "DQX/DocEl", "DQX/Controls",
+﻿define(["require", "DQX/Application", "DQX/Framework", "DQX/Msg", "DQX/Utils", "DQX/DocEl", "DQX/Controls", "DQX/Model",
   "DQX/SQL", "DQX/SVG", "DQX/FramePanel", "DQX/FrameTree", "DQX/FrameList", "DQX/DataFetcher/DataFetchers", "DQX/DataFetcher/DataFetcherSnpAsync", "DQX/DataFetcher/DataFetcherAnnotation",
   "Wizards/WizardSelectSamples", "Wizards/WizardFindGene", "Views/GenotypeViewer/GenotypeViewer", "Common", "MetaData"],
-  function (require, Application, Framework, Msg, DQX, DocEl, Controls,
+  function (require, Application, Framework, Msg, DQX, DocEl, Controls, Model,
             SQL, SVG, FramePanel, FrameTree, FrameList, DataFetcher, DataFetcherSnp, DataFetcherAnnotation,
             WizardSelectSamples, WizardFindGene, GenotypeViewer, Common, MetaData) {
     var SampleBrowserModule = {
@@ -108,23 +108,35 @@
             .setOnChanged($.proxy(this.promptGene, this));
           this.controlPanel.addControl(table);
 
+          var gv_config = Model({
+            compress: false,
+            cluster: false,
+            tab: 'genotypes'
+          });
           var compress = Controls.Check('Compress', {label: 'Compress', value: false});
+          compress.bindToModel(gv_config, 'compress');
           this.controlPanel.addControl(compress);
           var cluster = Controls.Check('Cluster', {label: 'Cluster', value: false});
+          cluster.bindToModel(gv_config, 'cluster');
           this.controlPanel.addControl(cluster);
+
+          var tab = Controls.Combo('TabChooser', {label: 'Display', states: [
+            {id:'genotypes', name:'Genotypes'},
+            {id:'bifurcation', name:'Bifurcation'},
+            {id:'ld', name:'LD Plot'}],
+            value: 'genotypes'
+          });
+          tab.bindToModel(gv_config, 'tab');
+          this.controlPanel.addControl(tab);
 
           this.controlPanel.render();
 
           var gv = this.genotypeViewer = GenotypeViewer(this.frameBrowser, {
             genotype:that.genotypeProvider,
             position:that.snpIndexProvider,
-            annotation:that.annotationProvider});
-          compress.setOnChanged(function () {
-            gv.modify_compress(compress.getValue())
-          });
-          cluster.setOnChanged(function () {
-            gv.modify_cluster(cluster.getValue())
-          });
+            annotation:that.annotationProvider},
+            gv_config
+          );
 
           //TODO This shouldn't be a hardcode
           this.sampleSet = [];

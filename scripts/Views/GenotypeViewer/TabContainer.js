@@ -10,6 +10,10 @@ define(["lodash", "DQX/Utils"],
       that.active_element = that.contents[0];
       that.contents = DQX.attrMap(that.contents, 'name');
 
+      that.show_tab = function(tab) {
+        that.active_element = that.contents[tab];
+      };
+
       that.draw = function(ctx, clip) {
         var element = that.active_element;
         ctx.save();

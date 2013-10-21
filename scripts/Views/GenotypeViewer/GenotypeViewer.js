@@ -11,9 +11,19 @@
             GeneMap, Genotypes,
             TouchEvents, Controls, Scale, IntervalCache, SNPCache,
             TabContainer, Container, Bifurcation, LDMap) {
-    return function GenotypeViewer(frame, providers) {
+    return function GenotypeViewer(frame, providers, config) {
       var that = {};
       that.providers = providers;
+      that.config = config;
+      config.on({change:'compress'}, function() {
+        that.modify_compress(this.get('compress'));
+      });
+      config.on({change:'cluster'}, function() {
+        that.modify_cluster(this.get('cluster'));
+      });
+      config.on({change:'tab'}, function() {
+        that.modify_tab(this.get('tab'));
+      });
 
       that.clickSNP = function (snp_index) {
         if (_.contains(that.view.selected_snps,snp_index)) {
@@ -35,6 +45,10 @@
       that.modify_cluster = function (cluster) {
         that.cluster = cluster;
         that.sortSamples();
+      };
+      that.modify_tab = function (tab) {
+        that.root_container.contents_by_name['data_area'].content.show_tab(tab);
+        that.needUpdate = 'tab';
       };
 
       that.resize = function () {
@@ -400,18 +414,26 @@
           that.last_view_change = 'snp_move';
         }
       };
-
+      var col_header = ColumnHeader(that.data, that.view, that.col_header_height, that.clickSNP);
       that.root_container = Container([
         {name: 'data_area', t:that.gene_map_height, content:
           TabContainer([
             {name: 'genotypes', content:
               Container([
                 {name:'table', t: that.col_header_height, content:Genotypes(that.data, that.view)},
-                {name:'column_header', content:ColumnHeader(that.data, that.view, that.col_header_height, that.clickSNP)},
+                {name:'column_header', content: col_header},
                 {name:'row_header', t: that.col_header_height, content:RowHeader(that.data, that.view)}
                 ])},
-            {name: 'bifurcation', content:Bifurcation(that.data, that.view)},
-            {name: 'ld', content:LDMap(that.data, that.view)},
+            {name: 'bifurcation', content:
+              Container([
+                {name:'table', t: that.col_header_height, content:Bifurcation(that.data, that.view)},
+                {name:'column_header', content: col_header},
+              ])},
+            {name: 'ld', content:
+              Container([
+                {name:'table', t: that.col_header_height, content: LDMap(that.data, that.view)},
+                {name:'column_header', content: col_header},
+              ])},
           ])},
         {name: 'genome', content:GeneMap(that.data, that.view)},
         {name: 'controls', content:Controls(that.data, that.view,

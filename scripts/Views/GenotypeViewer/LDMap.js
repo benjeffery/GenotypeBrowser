@@ -1,10 +1,16 @@
 define(["tween", "DQX/Utils"],
   function (tween, DQX) {
-    return function Genotypes(left_overdraw) {
+    return function LDMap(data,view) {
       var that = {};
-      that.left_overdraw = left_overdraw;
+      that.data = data;
+      that.view = view;
+      that.last_clip = {l:0, t:0, r:0, b:0};
 
-      that._draw = function (ctx, view, data) {
+
+      that.draw = function (ctx, clip) {
+        var view = that.view;
+        var data = that.data;
+        that.last_clip = clip;
         var x_scale = view.snp_scale;
         var snp_width = x_scale(1) - x_scale(0);
         var ld_sq_width = snp_width / Math.sqrt(2);

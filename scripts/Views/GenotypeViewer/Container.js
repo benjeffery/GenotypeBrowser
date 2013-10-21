@@ -7,6 +7,7 @@ define([],
         element.t || (element.t = 0);
         element.l || (element.l = 0);
       });
+      that.contents_by_name = DQX.attrMap(that.contents, 'name');
 
       that.draw = function(ctx, clip) {
         that.contents.forEach(function (element) {

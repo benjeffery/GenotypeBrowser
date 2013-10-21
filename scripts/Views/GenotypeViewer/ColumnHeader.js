@@ -129,12 +129,42 @@ define(["tween", "DQX/Utils"],
       that.event = function(type, ev, offset) {
         var pos = ev.center;
         pos = {x:pos.x - offset.x, y:pos.y - offset.y};
+        var clip = that.last_clip;
         if (type == 'click') {
-          var clip = that.last_clip;
           if (pos.x < clip.l || pos.x > clip.r || pos.y < 0 || pos.y > that.height)
             return false;
           var snp = Math.floor(view.snp_scale.invert(pos.x));
           that.clickSNPCallback(snp);
+        }
+        if (type == "dragStart") {
+          //Check that the event is occuring within our area
+          if (pos.x < 0 || pos.x > clip.r || pos.y < 0 || pos.y > that.height)
+            return false;
+          that.drag = true;
+          that.startDragScrollPos = that.view.scroll_pos;
+          that.startDragScrollY = ev.center.y;
+          that.view.snp_scale.startDrag(ev.touches);
+          return true;
+        }
+        if (type == "dragMove") {
+          if (that.drag) {
+            that.view.rescaleSNPic(that.view.snp_scale.dragMove(ev.touches));
+          }
+          //Return false so that other elements get a drag move even if they moved onto us mid-drag
+          return false;
+        }
+        if (type == "dragEnd") {
+          that.drag = false;
+          //Return false so that other elements get a drag end even if they moved onto us mid-drag
+          return false;
+        }
+        if (type == "mouseWheel") {
+          //Check that the event is occurring within our area
+          if (pos.x < clip.l || pos.x > clip.r || pos.y < 0 || pos.y > that.height)
+            return false;
+          var delta = DQX.getMouseWheelDelta(ev);
+          that.view.rescaleSNPic(that.view.snp_scale.scale_clamp(that.view.snp_scale.zoom(delta, pos.x), 0, that.data.snp_cache.snp_positions.length));
+          return true;
         }
         return false
       };
