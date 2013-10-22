@@ -1,8 +1,7 @@
-define(["tween", "DQX/Utils", "Views/GenotypeViewer/ColourAllocator"],
-  function (tween, DQX, ColourAllocator) {
+define(["tween", "DQX/Utils"],
+  function (tween, DQX) {
     return function RowHeader(data, view) {
       var that = {};
-      that.colours = ColourAllocator();
       that.view = view;
       that.data = data;
 
@@ -20,7 +19,7 @@ define(["tween", "DQX/Utils", "Views/GenotypeViewer/ColourAllocator"],
         var y_off = view.scroll_pos;
 
         that.data.samples.forEach(function(sample) {
-          ctx.fillStyle = DQX.getRGB(that.colours.get(sample.SampleContext.Site.Name), 0.75);
+          ctx.fillStyle = DQX.getRGB(view.colours.get(sample.SampleContext.Site.Name), 0.75);
           ctx.fillRect(sample.depth * 5, sample.vert + y_off, 5, row_height);
         });
 

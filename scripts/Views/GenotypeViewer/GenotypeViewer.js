@@ -4,13 +4,15 @@
   "Views/GenotypeViewer/GeneMap", "Views/GenotypeViewer/Genotypes",
   "Views/GenotypeViewer/TouchEvents", "Views/GenotypeViewer/Controls", "Views/GenotypeViewer/Scale",
   "Views/GenotypeViewer/IntervalCache", "Views/GenotypeViewer/SNPCache", "Views/GenotypeViewer/TabContainer",
-  "Views/GenotypeViewer/Container",  "Views/GenotypeViewer/Bifurcation", "Views/GenotypeViewer/LDMap"],
+  "Views/GenotypeViewer/Container",  "Views/GenotypeViewer/Bifurcation", "Views/GenotypeViewer/LDMap",
+  "Views/GenotypeViewer/Network", "Views/GenotypeViewer/ColourAllocator"],
   function (_, cluster, easel, d3, tween, require, DQX, Model,
             SVG,
             FramePanel, MetaData, ColumnHeader, RowHeader,
             GeneMap, Genotypes,
             TouchEvents, Controls, Scale, IntervalCache, SNPCache,
-            TabContainer, Container, Bifurcation, LDMap) {
+            TabContainer, Container, Bifurcation, LDMap, Network,
+            ColourAllocator) {
     return function GenotypeViewer(frame, providers, config) {
       var that = {};
       that.providers = providers;
@@ -239,7 +241,7 @@
       //Where to show it
       that.parent_element = $('#' + frame.getClientDivID());
       that.parent_element
-        .append('<canvas id="genotypes-browser">')
+        .append('<canvas style="position:absolute" id="genotypes-browser">')
         .addClass('genotypes-browser');
       that.canvas = $("#genotypes-browser");
 
@@ -380,6 +382,7 @@
 
       //View parameters
       that.view = {
+        colours: ColourAllocator(),
         genome_scale: Scale(),
         last_genome_scale_domain: [0, 0],
         snp_scale: Scale(),
@@ -434,6 +437,11 @@
                 {name:'table', t: that.col_header_height, content: LDMap(that.data, that.view)},
                 {name:'column_header', content: col_header},
               ])},
+            {name: 'network', content:
+              Container([
+                {name:'network', t: that.col_header_height, content: Network(that.data, that.view)},
+                {name:'column_header', content: col_header},
+              ])},
           ])},
         {name: 'genome', content:GeneMap(that.data, that.view)},
         {name: 'controls', content:Controls(that.data, that.view,
@@ -442,7 +450,7 @@
       ]);
       that.data.snp_cache.set_chrom('MAL13');
       that.last_view_change = 'genome';
-      
+
 
       //How to divide the samples
       that.view.sample_heirachy = [

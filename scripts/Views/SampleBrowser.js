@@ -125,7 +125,8 @@
           var tab = Controls.Combo('TabChooser', {label: 'Display', states: [
             {id:'genotypes', name:'Genotypes'},
             {id:'bifurcation', name:'Bifurcation'},
-            {id:'ld', name:'LD Plot'}],
+            {id:'ld', name:'LD Plot'},
+            {id:'network', name:'Network'}],
             value: 'genotypes'
           });
           tab.bindToModel(gv_config, 'tab');

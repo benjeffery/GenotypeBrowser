@@ -20,3 +20,15 @@ a, a:visited
     font-weight:bold;
     line-height:200%;
 }
+
+.node {
+    cursor: pointer;
+    stroke: #000;
+    stroke-width: 1.5px;
+}
+
+.link {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
