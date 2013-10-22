@@ -25,7 +25,7 @@ define(["tween", "DQX/Utils"],
         //Make a set of strings that are the haplotypes for each sample
         var gap = .02;
         var draw = function (start, end, step) {
-          var groups = [{samples: _.range(data.samples.length), top:0, height:300}];
+          var groups = [{samples: _.range(data.samples.length), top:5, height:Math.max(0,clip.b - 10) }];
           for (var pos = start; pos != end; pos += step) {
             var new_groups = [];
             _(groups).forEach(function(group) {
