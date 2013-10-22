@@ -113,12 +113,14 @@
             cluster: false,
             tab: 'genotypes'
           });
+          var table2 = Controls.CompoundGrid();
           var compress = Controls.Check('Compress', {label: 'Compress', value: false});
           compress.bindToModel(gv_config, 'compress');
-          this.controlPanel.addControl(compress);
+          table2.setItem(0,0,compress);
           var cluster = Controls.Check('Cluster', {label: 'Cluster', value: false});
           cluster.bindToModel(gv_config, 'cluster');
-          this.controlPanel.addControl(cluster);
+          table2.setItem(0,2,cluster);
+          this.controlPanel.addControl(table2);
 
           var tab = Controls.Combo('TabChooser', {label: 'Display', states: [
             {id:'genotypes', name:'Genotypes'},
