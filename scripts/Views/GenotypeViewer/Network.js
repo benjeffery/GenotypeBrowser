@@ -17,7 +17,12 @@ define(["d3", "DQX/Utils"],
           .attr("y1", function(d) { return d.source.y; })
           .attr("x2", function(d) { return d.target.x; })
           .attr("y2", function(d) { return d.target.y; })
-          .style("stroke", function(d) {return d.distance > 0 ? 'rgba(255,0,0,0.75)' : 'rgba(0,0,255,0.5)'});
+          .style("stroke", function(d) {return d.distance > 0 ? 'rgba(255,0,0,0.75)' : 'rgba(0,0,255,0.25)'});
+
+        that.svg.selectAll(".link_text")
+          .attr("x", function(d) { return (d.source.x + d.target.x)/2; })
+          .attr("y", function(d) { return (d.source.y + d.target.y)/2; })
+          .text(function(d) { return d.distance > 0 ? d.distance : ''});
 
         that.svg.selectAll(".node").attr("cx", function(d) { return d.x; })
           .attr("cy", function(d) { return d.y; });
@@ -41,7 +46,8 @@ define(["d3", "DQX/Utils"],
         var start_snp = Math.floor(x_scale.domain()[0]);
         var end_snp = Math.ceil(x_scale.domain()[1]);
 
-        var samp_list = _(samples).sortBy().reduce(function(sum, num) { return sum + num;});
+        //TODO Fix as first sample is stringged as "Object"
+        var samp_list = _(samples).sortBy().reduce(function(sum, samp) { return sum + samp.ID;});
         var selected_list = _(view.selected_snps).sortBy().reduce(function(sum, num) { return '' + sum + num;});
         if (samp_list != that.last_samples || selected_list != that.last_selection) {
           that.nodes = data.samples;
@@ -55,9 +61,10 @@ define(["d3", "DQX/Utils"],
             for (var j = i + 1; j < samples.length; j++) {
               if (_(ignore).contains(j))
                 continue;
-              var distance = that.snp_distance(view.selected_snps,  genotypes[i].gt, genotypes[j].gt)*75;
+              var distance = that.snp_distance(view.selected_snps,  genotypes[i].gt, genotypes[j].gt);
               if (distance == 0) {
-                //Identical sample, ignore in future and remove all existing links
+                //Identical sample, ignore in future and remove all existing links to it as we only need the one we
+                //are about to add.
                 ignore.push(j);
                 that.links = _(that.links).reject({source:j}).reject({target:j}).value();
               }
@@ -69,12 +76,62 @@ define(["d3", "DQX/Utils"],
                 to_process.push(j);
             }
           }
+
+          //We now need to trim those edges for which there exist other paths of the same length, but which are split.
+          //Note that there is never a shorter path than the direct route
+
+          //Make a link lookup table
+          var links_by_node = {};
+          var links_by_node = {};
+          _(that.links).forEach(function (link) {
+            if (link.distance > 0) {
+              links_by_node[link.source] || (links_by_node[link.source] = []);
+              links_by_node[link.source].push(link);
+              links_by_node[link.target] || (links_by_node[link.target] = []);
+              links_by_node[link.target].push(link);
+            }
+          });
+          var sorted_links = _(that.links).sortBy('distance');
+          that.links = sorted_links.filter(function (link) {
+            //Keep the 0 and length 1 edges
+            if (link.distance <= 1) return true;
+            //For everything else only keep it if there is no path of the same length
+            var routes = [{node:link.source, distance:0}];
+
+            var found = false;
+            while (routes.length > 0 && !found) {
+              var new_routes = [];
+              _(routes).forEach(function (route) {
+                _(links_by_node[route.node]).forEach(function (step) {
+                  if (step.source == link.source && step.target == link.target) return //Skip ourselves!
+                  var new_route;
+                  if (step.source == route.node) {
+                    new_route = {node:step.target, distance:route.distance + step.distance}
+                  } else {
+                    new_route = {node:step.source, distance:route.distance + step.distance}
+                  }
+                  if (new_route.node != link.target) {
+                    if (route.distance < link.distance)
+                      new_routes.push(new_route); //Not there yet and not yet longer so process it next go.
+                  }
+                  else {
+                    if (new_route.distance == link.distance)
+                      found = true; //We found a route so remove the link
+                  }
+                });
+                routes = new_routes;
+              });
+            }
+            //No routes the same length were found so keep this one
+            return !found;
+          });
+
           //Translate to actual objects from indices
+          that.links = that.links.value();
           for (i = 0; i < that.links.length; i++) {
             that.links[i].source = samples[that.links[i].source];
             that.links[i].target = samples[that.links[i].target];
           }
-
 
           var canvas = ctx.canvas;
           if (!that.svg) {
@@ -83,30 +140,41 @@ define(["d3", "DQX/Utils"],
 
             that.force = d3.layout.force()
               .on("tick", that.tick)
-              .linkDistance(function (link) {return link.distance + 0;})
-              .charge(-150);
+              .linkDistance(function (link) {return link.distance*75 + 0;})
+              .charge(-100);
           }
-          that.svg.attr("width", canvas.width)
-            .attr("height", canvas.height)
+          that.svg.attr("width", clip.r-clip.l)
+            .attr("height", clip.b)
             .style("left", -clip.l)
             .style("top", -clip.t);
 
           var link = that.svg.selectAll(".link"),
-            node = that.svg.selectAll(".node");
-
           // Update the links…
           link = link.data(that.links, function(d) { return d.source.ID + d.target.ID; });
           // Exit any old links.
           link.exit().remove();
           // Enter any new links.
-          link.enter().insert("line", ".node")
+          var new_links = link.enter().insert("line", ".node")
             .attr("class", "link")
             .attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
             .attr("y2", function(d) { return d.target.y; });
 
+          var link_text = that.svg.selectAll(".link_text"),
+          // Update the links…
+          link_text = link_text.data(that.links, function(d) { return d.source.ID + d.target.ID; });
+          // Exit any old links.
+          link_text.exit().remove();
+          // Enter any new links.
+          var new_links = link_text.enter().insert("text", ".link_text")
+            .attr("class", "link_text")
+            .attr("x", function(d) { return (d.source.x + d.target.x)/2; })
+            .attr("y", function(d) { return (d.source.y + d.target.y)/2; })
+            .text(function(d) { return d.distance > 0 ? d.distance : ''});
+
           // Update the nodes…
+          var node = that.svg.selectAll(".node");
           node = node.data(that.nodes, function(d) { return d.ID; })//.style("fill", color);
           // Exit any old nodes.
           node.exit().remove();
@@ -121,7 +189,7 @@ define(["d3", "DQX/Utils"],
             .call(that.force.drag);
 
           that.force
-            .size([canvas.width, canvas.height])
+            .size([clip.r-clip.l, clip.b])
             .nodes(that.nodes)
             .links(that.links)
             .start();
